@@ -995,13 +995,83 @@ const FAMILY_KEYS = Object.keys(FAMILY_MEMBERS)
   .filter(k => FAMILY_MEMBERS[k].size >= 2)
   .sort((a, b) => familyLabel(a).localeCompare(familyLabel(b), 'pl'));
 
-// A family view keeps the matching people plus their spouses, so couples
-// stay together, and drops links pointing outside the view.
+const CHILDREN_OF = {};
+people.forEach(p => (p.parents || []).forEach(par => {
+  if(!CHILDREN_OF[par]) CHILDREN_OF[par] = [];
+  CHILDREN_OF[par].push(p.id);
+}));
+
+function childIdsOf(id){ return CHILDREN_OF[id] || []; }
+function spouseIdsOf(id){ return ((PEOPLE_BY_ID[id] || {}).spouses || []).filter(s => PEOPLE_BY_ID[s]); }
+function siblingIdsOf(id){
+  const par = (PEOPLE_BY_ID[id] || {}).parents || [];
+  if(!par.length) return [];
+  return people.filter(o => o.id !== id && (o.parents || []).some(pid => par.includes(pid))).map(o => o.id);
+}
+function addWithSpouses(id, set){
+  set.add(id);
+  spouseIdsOf(id).forEach(s => set.add(s));
+}
+
+// how many generations down from the oldest known person, ignoring layout
+const DEPTH_OF = (() => {
+  const cache = {};
+  function depth(id, seen){
+    if(cache[id] !== undefined) return cache[id];
+    if(seen.has(id)) return 0;              // cycle guard
+    seen.add(id);
+    const par = ((PEOPLE_BY_ID[id] || {}).parents || []).filter(x => PEOPLE_BY_ID[x]);
+    const d = par.length ? Math.max(...par.map(x => depth(x, seen))) + 1 : 0;
+    cache[id] = d;
+    return d;
+  }
+  people.forEach(p => depth(p.id, new Set()));
+  return cache;
+})();
+
+// A family view is read from the youngest person carrying the surname:
+// everyone with that name, then the direct line upwards — parents,
+// grandparents, great-grandparents and so on — and, around the parents and
+// grandparents, their brothers and sisters with their own husbands, wives
+// and children. Older generations stay as the direct line, otherwise every
+// view swells into most of the tree.
+const SIDEWAYS_LEVELS = 2;   // 1 = parents, 2 = parents and grandparents
+
 function peopleForFamily(key){
-  const ids = new Set(FAMILY_MEMBERS[key] || []);
-  [...ids].forEach(id => (PEOPLE_BY_ID[id].spouses || []).forEach(s => {
-    if(PEOPLE_BY_ID[s]) ids.add(s);
-  }));
+  const core = [...(FAMILY_MEMBERS[key] || [])];
+  if(!core.length) return people;
+  const ids = new Set();
+
+  // everyone with the surname, their spouses, and any children they have
+  core.forEach(id => {
+    addWithSpouses(id, ids);
+    childIdsOf(id).forEach(c => addWithSpouses(c, ids));
+  });
+
+  // the youngest of them anchors the climb upwards
+  const anchor = core.reduce((a, b) => (DEPTH_OF[b] > DEPTH_OF[a] ? b : a), core[0]);
+
+  let level = [anchor];
+  let step = 0;
+  const seen = new Set([anchor]);
+  while(level.length){
+    const parents = [];
+    level.forEach(id => ((PEOPLE_BY_ID[id] || {}).parents || []).forEach(par => {
+      if(PEOPLE_BY_ID[par] && !seen.has(par)){ seen.add(par); parents.push(par); }
+    }));
+    step++;
+    parents.forEach(par => {
+      addWithSpouses(par, ids);
+      if(step <= SIDEWAYS_LEVELS){
+        siblingIdsOf(par).forEach(s => {
+          addWithSpouses(s, ids);
+          childIdsOf(s).forEach(c => addWithSpouses(c, ids));
+        });
+      }
+    });
+    level = parents;
+  }
+
   return people.filter(p => ids.has(p.id)).map(p => ({
     ...p,
     parents: (p.parents || []).filter(id => ids.has(id)),
@@ -1040,7 +1110,7 @@ function render(){
   const plPokolen = n => { const u = n%10, t = n%100; if(n===1) return 'pokolenie'; if(u>=2 && u<=4 && (t<12 || t>14)) return 'pokolenia'; return 'pokoleń'; };
   const viewNote = currentView === 'all'
     ? 'całe drzewo genealogiczne'
-    : `widok rodziny: ${familyLabel(currentView)}`;
+    : `${familyLabel(currentView)} i ich przodkowie`;
   document.getElementById('stats').textContent =
     `${activePeople.length} ${plOsoby(activePeople.length)} · ${maxGen+1} ${plPokolen(maxGen+1)} · ${viewNote}`;
 
