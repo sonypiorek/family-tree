@@ -258,6 +258,43 @@
   [data-person]:focus{outline:none;}
   [data-person]:focus-visible .person-card{stroke:var(--accent);stroke-width:2;}
 
+  /* --- the + on a tile, and its little menu --- */
+  .expand-btn{cursor:pointer;}
+  .expand-btn circle{fill:var(--btn-bg);stroke:var(--edge);stroke-width:1;}
+  .expand-btn line{stroke:var(--muted);stroke-width:1.7;stroke-linecap:round;}
+  .expand-btn:hover circle,.expand-btn:focus-visible circle{fill:var(--accent);stroke:var(--accent);}
+  .expand-btn:hover line,.expand-btn:focus-visible line{stroke:var(--ground);}
+  .expand-btn:focus{outline:none;}
+  .expand-menu{
+    position:fixed;
+    z-index:20;
+    display:flex;
+    flex-direction:column;
+    min-width:186px;
+    padding:5px;
+    background:var(--surface);
+    border:1px solid var(--edge);
+    border-radius:10px;
+    box-shadow:0 8px 26px rgba(0,0,0,.2);
+  }
+  .expand-menu[hidden]{display:none;}
+  .expand-menu button{
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:500;
+    text-align:left;
+    color:var(--ink);
+    background:transparent;
+    border:0;
+    border-radius:7px;
+    padding:8px 10px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .expand-menu button:hover{background:var(--btn-hover);}
+  .expand-menu button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .expand-menu .count{color:var(--muted);font-weight:400;}
+
   /* --- modal --- */
   .modal-backdrop{
     position:fixed;
@@ -381,6 +418,8 @@
   </div>
 
   <div id="viewport"></div>
+  <div class="expand-menu" id="expand-menu" role="menu" hidden></div>
+
   <div class="modal-backdrop" id="modal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <button class="modal-close" id="modal-close" aria-label="Zamknij" title="Zamknij">&times;</button>
@@ -1089,10 +1128,53 @@ function peopleForFamily(key){
 
 let currentView = 'all';
 let activePeople = people;
+// people pulled in one at a time with the + on a tile
+let extraIds = new Set();
+// set before a re-render to keep one card fixed on screen instead of re-homing
+let pendingAnchor = null;
+// the last render's positions and camera, so expanding can measure the shift
+let layoutState = null;
+
+function computeActive(){
+  const base = currentView === 'all' ? people : peopleForFamily(currentView);
+  if(!extraIds.size) return base;
+  const ids = new Set(base.map(p => p.id));
+  extraIds.forEach(x => { if(PEOPLE_BY_ID[x]) ids.add(x); });
+  return people.filter(p => ids.has(p.id)).map(p => ({
+    ...p,
+    parents: (p.parents || []).filter(i => ids.has(i)),
+    spouses: (p.spouses || []).filter(i => ids.has(i)),
+  }));
+}
 
 function setView(key){
   currentView = FAMILY_MEMBERS[key] ? key : 'all';
-  activePeople = currentView === 'all' ? people : peopleForFamily(currentView);
+  extraIds = new Set();
+  activePeople = computeActive();
+  render();
+}
+
+// relatives this person has in the data but who are not on screen
+function hiddenRelatives(id, inView){
+  const p = PEOPLE_BY_ID[id] || {};
+  const out = {};
+  const parents = (p.parents || []).filter(x => PEOPLE_BY_ID[x] && !inView.has(x));
+  const siblings = siblingIdsOf(id).filter(x => !inView.has(x));
+  const children = childIdsOf(id).filter(x => !inView.has(x));
+  if(parents.length)  out.rodzice    = parents;
+  if(siblings.length) out.rodzenstwo = siblings;
+  if(children.length) out.dzieci     = children;
+  return out;
+}
+
+function expandFrom(id, kind){
+  const inView = new Set(activePeople.map(p => p.id));
+  const add = hiddenRelatives(id, inView)[kind] || [];
+  if(!add.length) return;
+  add.forEach(x => extraIds.add(x));
+  // after the re-layout, frame the clicked card together with the new arrivals
+  pendingAnchor = { id, added: add.slice(), k: layoutState ? layoutState.view.k : 1 };
+  activePeople = computeActive();
   render();
 }
 
@@ -1178,6 +1260,8 @@ function render(){
   const tip = document.createElement('div');
   tip.id = 'tooltip';
 
+  const inView = new Set(activePeople.map(p => p.id));
+
   // person cards
   activePeople.forEach(p => {
     const { x, y, w } = pos[p.id];
@@ -1237,6 +1321,33 @@ function render(){
     card.onkeydown = e => {
       if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPerson(p.id); }
     };
+
+    // a + in the bottom corner when this person has relatives off screen
+    if(Object.keys(hiddenRelatives(p.id, inView)).length){
+      const btn = document.createElementNS(SVGNS,'g');
+      btn.setAttribute('class','expand-btn');
+      btn.setAttribute('data-expand', p.id);
+      btn.setAttribute('tabindex','0');
+      btn.setAttribute('role','button');
+      btn.setAttribute('aria-label', `${p.name} — pokaż więcej krewnych`);
+      const cx = w - 14, cy = CARD_H;
+      const circ = document.createElementNS(SVGNS,'circle');
+      circ.setAttribute('cx', cx); circ.setAttribute('cy', cy); circ.setAttribute('r', 8);
+      btn.appendChild(circ);
+      [[cx-3.6, cy, cx+3.6, cy], [cx, cy-3.6, cx, cy+3.6]].forEach(([x1,y1,x2,y2]) => {
+        const l = document.createElementNS(SVGNS,'line');
+        l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+        btn.appendChild(l);
+      });
+      btn.onkeydown = e => {
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          const r = circ.getBoundingClientRect();
+          openExpandMenu(p.id, r.left + r.width/2, r.bottom);
+        }
+      };
+      card.appendChild(btn);
+    }
 
     g.appendChild(card);
   });
@@ -1318,8 +1429,10 @@ function render(){
     if(e.type === 'pointerup' && wasLast && !dragged && !multiTouch && downAt){
       // pointer capture keeps the event on the viewport, so hit-test by position
       const el = document.elementFromPoint(e.clientX, e.clientY);
+      const plus = el && el.closest ? el.closest('[data-expand]') : null;
       const host = el && el.closest ? el.closest('[data-person]') : null;
-      if(host) openPerson(host.getAttribute('data-person'));
+      if(plus) openExpandMenu(plus.getAttribute('data-expand'), e.clientX, e.clientY);
+      else if(host) openPerson(host.getAttribute('data-person'));
     }
     downAt = null;
   };
@@ -1332,6 +1445,31 @@ function render(){
 
   viewport.appendChild(svg);
   viewport.appendChild(tip);
+
+  layoutState = { pos, view };
+
+  // after an expand, frame the clicked card and whoever just joined it,
+  // zooming out only as far as that group needs
+  if(pendingAnchor){
+    const anchor = pendingAnchor;
+    const framed = [anchor.id, ...anchor.added].filter(i => pos[i]);
+    pendingAnchor = null;
+    if(framed.length){
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      framed.forEach(i => {
+        const c = pos[i];
+        minX = Math.min(minX, c.x); maxX = Math.max(maxX, c.x + c.w);
+        minY = Math.min(minY, c.y); maxY = Math.max(maxY, c.y + CARD_H);
+      });
+      const vw = viewport.clientWidth || 800, vh = viewport.clientHeight || 500;
+      const k = Math.max(0.06, Math.min(anchor.k, (vw - 90) / (maxX - minX), (vh - 90) / (maxY - minY)));
+      view.k = k;
+      view.x = vw / 2 - (PAD + (minX + maxX) / 2) * k;
+      view.y = vh / 2 - (PAD + (minY + maxY) / 2) * k;
+      applyView();
+      return;
+    }
+  }
 
   // initial view: top of the tree, centered on the root card, readable zoom
   (function home(){
@@ -1442,6 +1580,59 @@ function closeModal(){
   document.body.style.overflow = '';
   if(lastFocused && lastFocused.focus) lastFocused.focus();
 }
+
+// ---------------------------------------------------------
+// The + on a tile: show relatives who are not on screen yet
+// ---------------------------------------------------------
+const expandMenu = document.getElementById('expand-menu');
+
+const EXPAND_LABELS = {
+  rodzice:    'Pokaż rodziców',
+  rodzenstwo: 'Pokaż rodzeństwo',
+  dzieci:     'Pokaż dzieci',
+};
+
+function closeExpandMenu(){
+  expandMenu.hidden = true;
+  expandMenu.replaceChildren();
+}
+
+function openExpandMenu(id, clientX, clientY){
+  const inView = new Set(activePeople.map(p => p.id));
+  const groups = hiddenRelatives(id, inView);
+  const kinds = Object.keys(groups);
+  if(!kinds.length){ closeExpandMenu(); return; }
+
+  expandMenu.replaceChildren();
+  ['rodzice','rodzenstwo','dzieci'].filter(k => groups[k]).forEach(kind => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role','menuitem');
+    b.append(EXPAND_LABELS[kind] + ' ');
+    const n = document.createElement('span');
+    n.className = 'count';
+    n.textContent = `(${groups[kind].length})`;
+    b.append(n);
+    b.onclick = () => { closeExpandMenu(); expandFrom(id, kind); };
+    expandMenu.appendChild(b);
+  });
+
+  // place it below the +, nudged back on screen if it would hang off an edge
+  expandMenu.hidden = false;
+  const r = expandMenu.getBoundingClientRect();
+  const x = Math.min(Math.max(8, clientX - r.width / 2), window.innerWidth - r.width - 8);
+  const y = clientY + 10 + r.height > window.innerHeight ? clientY - r.height - 10 : clientY + 10;
+  expandMenu.style.left = x + 'px';
+  expandMenu.style.top = Math.max(8, y) + 'px';
+  const first = expandMenu.querySelector('button');
+  if(first) first.focus();
+}
+
+document.addEventListener('pointerdown', e => {
+  if(!expandMenu.hidden && !expandMenu.contains(e.target)) closeExpandMenu();
+}, true);
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeExpandMenu(); });
+window.addEventListener('resize', closeExpandMenu);
 
 document.getElementById('intro-add').onclick = openGeneral;
 document.getElementById('open-form').onclick = revealForm;
