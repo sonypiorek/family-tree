@@ -568,7 +568,7 @@ const people = [
   // Danuta & Marian's children
   { id: "andrzej-smierzynski", name: "Andrzej Śmierzyński", birth: "", death: "", gender: "m", parents: ["danuta-kosinska", "marian-smierzynski"], spouses: [] },
   { id: "malgorzata-smierzynska", name: "Małgorzata Piórek (z d. Śmierzyńska)", birth: "", death: "", gender: "f", parents: ["danuta-kosinska", "marian-smierzynski"], spouses: ["piotr-piorek"] },
-  { id: "piotr-piorek", name: "Piotr Piórek", birth: "", death: "", gender: "m", parents: [], spouses: ["malgorzata-smierzynska"] },
+  { id: "piotr-piorek", name: "Piotr Piórek", birth: "", death: "", gender: "m", parents: ["stanislaw-piorek", "elzbieta-piorek"], spouses: ["malgorzata-smierzynska"] },
 
   // Małgorzata & Piotr's children
   { id: "tomasz-piorek", name: "Tomasz Piórek", birth: "", death: "", gender: "m", parents: ["malgorzata-smierzynska", "piotr-piorek"], spouses: [] },
@@ -576,6 +576,39 @@ const people = [
 
   // Tomasz's son
   { id: "ignacy-piorek", name: "Ignacy Piórek", birth: "", death: "", gender: "m", parents: ["tomasz-piorek"], spouses: [] },
+
+  // ------- the Keller line (Piotr Piórek's birth family) -------
+  { id: "stanislaw-piorek", name: "Stanisław Piórek", birth: "", death: "", gender: "m", parents: [], spouses: ["elzbieta-piorek"] },
+  { id: "elzbieta-piorek", name: "Elżbieta Piórek (z d. Keller)", birth: "", death: "", gender: "f", parents: ["bronislaw-keller", "stanislawa-keller"], spouses: ["stanislaw-piorek"] },
+
+  { id: "bronislaw-keller", name: "Bronisław Keller", birth: "", death: "", gender: "m", parents: [], spouses: ["stanislawa-keller"] },
+  { id: "stanislawa-keller", name: "Stanisława Keller (z d. Kaczmarek)", birth: "", death: "", gender: "f", parents: [], spouses: ["bronislaw-keller"] },
+
+  // Elżbieta's sisters
+  { id: "barbara-gumowska", name: "Barbara Gumowska (z d. Keller)", birth: "", death: "", gender: "f", parents: ["bronislaw-keller", "stanislawa-keller"], spouses: ["andrzej-gumowski"] },
+  { id: "andrzej-gumowski", name: "Andrzej Gumowski", birth: "", death: "", gender: "m", parents: [], spouses: ["barbara-gumowska"] },
+  { id: "bogumila-jarosinska", name: "Bogumiła Jarosińska (z d. Keller)", birth: "", death: "", gender: "f", parents: ["bronislaw-keller", "stanislawa-keller"], spouses: ["wladyslaw-jarosinski"] },
+  { id: "wladyslaw-jarosinski", name: "Władysław „Włodek” Jarosiński", birth: "", death: "", gender: "m", parents: [], spouses: ["bogumila-jarosinska"] },
+
+  // Barbara & Andrzej's daughters
+  { id: "magdalena-piotrowska", name: "Magdalena Piotrowska (z d. Gumowska)", birth: "", death: "", gender: "f", parents: ["barbara-gumowska", "andrzej-gumowski"], spouses: ["edward-piotrowski"] },
+  { id: "edward-piotrowski", name: "Edward „Wojtek” Piotrowski", birth: "", death: "", gender: "m", parents: [], spouses: ["magdalena-piotrowska"] },
+  { id: "izabela-dziuba", name: "Izabela Dziuba (z d. Gumowska)", birth: "", death: "", gender: "f", parents: ["barbara-gumowska", "andrzej-gumowski"], spouses: ["jaroslaw-dziuba"] },
+  { id: "jaroslaw-dziuba", name: "Jarosław Dziuba", birth: "", death: "", gender: "m", parents: [], spouses: ["izabela-dziuba"] },
+
+  // Magdalena & Edward's children
+  { id: "wojciech-piotrowski", name: "Wojciech Piotrowski", birth: "", death: "", gender: "m", parents: ["magdalena-piotrowska", "edward-piotrowski"], spouses: [] },
+  { id: "natalia-piotrowska", name: "Natalia Piotrowska", birth: "", death: "", gender: "f", parents: ["magdalena-piotrowska", "edward-piotrowski"], spouses: [] },
+
+  // Izabela & Jarosław's children
+  { id: "bartlomiej-dziuba", name: "Bartłomiej Dziuba", birth: "", death: "", gender: "m", parents: ["izabela-dziuba", "jaroslaw-dziuba"], spouses: [] },
+  { id: "agata-dziuba", name: "Agata (z d. Dziuba)", birth: "", death: "", gender: "f", parents: ["izabela-dziuba", "jaroslaw-dziuba"], spouses: ["maz-agaty"] },
+  { id: "maz-agaty", name: "Mąż Agaty (imię i nazwisko nieznane)", birth: "", death: "", gender: "m", parents: [], spouses: ["agata-dziuba"] },
+  { id: "dziecko-agaty", name: "Dziecko Agaty (imię nieznane)", birth: "", death: "", gender: "", parents: ["agata-dziuba", "maz-agaty"], spouses: [] },
+
+  // Bogumiła & Władysław's children
+  { id: "agnieszka-jarosinska", name: "Agnieszka Jarosińska", birth: "", death: "", gender: "f", parents: ["bogumila-jarosinska", "wladyslaw-jarosinski"], spouses: [] },
+  { id: "jakub-jarosinski", name: "Jakub Jarosiński", birth: "", death: "", gender: "m", parents: ["bogumila-jarosinska", "wladyslaw-jarosinski"], spouses: [] },
 
   // Kazimierz's line
   { id: "barbara-kosinska", name: "Barbara Kosińska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["kazimierz-kosinski"] },
@@ -792,12 +825,20 @@ function computeLayout(people){
   // they wrap onto additional rows (shelves), so the tree grows vertically
   // instead of stretching into one enormous generation-wide row.
   const attachedTo = {};
+  const hasMembers = {};
+  function attachSpouse(memberId, headId){
+    if(attachedTo[memberId] || hasMembers[memberId] || attachedTo[headId]) return;
+    attachedTo[memberId] = headId;
+    hasMembers[headId] = true;
+  }
+  const hasKnownParents = id => ((byId[id] || {}).parents || []).some(pid => byId[pid]);
   people.forEach(p => {
     if(attachedTo[p.id]) return;
     (p.spouses || []).forEach(sid => {
+      if(attachedTo[p.id]) return;          // p was absorbed on an earlier spouse
       const s = byId[sid];
       if(!s || attachedTo[sid] || sid === p.id) return;
-      const marriedIn = !(s.parents || []).some(pid => byId[pid]);
+      const marriedIn = !hasKnownParents(sid);
       // a spouse with known parents can still sit beside their partner as
       // long as all their children are shared with this partner — their own
       // parents then reach them with a long-range link across clusters
@@ -805,7 +846,12 @@ function computeLayout(people){
         const par = ch.parents || [];
         return !par.includes(sid) || par.includes(p.id);
       });
-      if(marriedIn || childrenShared) attachedTo[sid] = p.id;
+      if(!(marriedIn || childrenShared)) return;
+      // whichever of the two has known parents heads the couple's unit, so
+      // the couple lands on the row those parents imply; otherwise a person
+      // can end up beside their own mother or father
+      if(!marriedIn && !hasKnownParents(p.id)) attachSpouse(p.id, sid);
+      else attachSpouse(sid, p.id);
     });
   });
 
@@ -996,6 +1042,9 @@ const FAMILY_OVERRIDES = {
   'syn-tulecki':            ['Tulecki'],
   'syn-rownicki':           ['Równicki'],
   'kowalski-partner':       ['Kowalski'],
+  'maz-agaty':              [],
+  'dziecko-agaty':          [],
+  'agata-dziuba':           ['Dziuba'],
 };
 
 const NOT_A_SURNAME = /^(niewiadomego|nieznane|nieznana|nieznany|imię|imiona|dzieci|dziecko|partner|była?|były)$/i;
