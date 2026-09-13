@@ -978,18 +978,130 @@ function computeLayout(people){
 
   // root families sit side by side, left to right
   const roots = unitList.filter(u => !(u.head.parents || []).some(pid => byId[pid]));
-  // a root starts on its own generation's row, not at the top of the canvas,
-  // so every generation reads as one horizontal band across the whole tree
+  // Each root cluster sits on its own generation's row, so every generation
+  // reads as one horizontal band. Horizontally a cluster is pulled over the
+  // children it feeds into elsewhere in the tree: someone's parents belong
+  // above them, not parked at the far side of the canvas.
   const ROW_H = CARD_H + TOP_GAP;
-  let rx = 0, height = 1;
-  roots.forEach(r => {
-    layoutUnit(r);
-    const ry = (genCache[r.head.id] || 0) * ROW_H;
-    placeUnit(r, rx, ry);
-    rx += r.w + ROOT_GAP_X;
-    height = Math.max(height, ry + r.h);
+  roots.forEach(layoutUnit);
+
+  const clusterOf = {};
+  (function markClusters(){
+    const walk = (u, root) => {
+      u.members.forEach(m => { clusterOf[m.id] = root; });
+      u.children.forEach(c => walk(c, root));
+    };
+    roots.forEach(r => walk(r, r));
+  })();
+
+  // children of this cluster's members who live in a different cluster
+  const feeds = new Map();
+  const clusterSize = new Map(roots.map(r => [r, 0]));
+  people.forEach(p => {
+    const own = clusterOf[p.id];
+    if(own) clusterSize.set(own, clusterSize.get(own) + 1);
+    (p.parents || []).forEach(par => {
+      if(!byId[par]) return;
+      const from = clusterOf[par];
+      if(!from || from === own) return;
+      if(!feeds.has(from)) feeds.set(from, new Set());
+      feeds.get(from).add(p.id);
+    });
   });
-  const width = Math.max(1, rx - ROOT_GAP_X);
+
+  // Collisions are tested card by card within a row, not cluster box against
+  // cluster box: a cluster's box is mostly empty air, and testing the boxes
+  // shoves every branch out to the far side instead of letting it tuck into
+  // the gap above its own children.
+  const placedRows = new Map();          // row y -> occupied [x0,x1] spans
+  const CARD_GAP = 30;
+  const done = new Set();
+  let farRight = 0;
+
+  function shiftToClear(cards, dx, dir){
+    let worst = 0;
+    cards.forEach(c => {
+      const spans = placedRows.get(c.y);
+      if(!spans) return;
+      const x0 = c.x + dx, x1 = x0 + c.w;
+      spans.forEach(b => {
+        if(x0 < b.x1 + CARD_GAP && x1 + CARD_GAP > b.x0){
+          const move = dir > 0 ? b.x1 + CARD_GAP - x0 : b.x0 - CARD_GAP - x1;
+          if(dir > 0 ? move > worst : move < worst) worst = move;
+        }
+      });
+    });
+    return worst;
+  }
+  // slide the cluster away from the wanted spot until no card overlaps
+  function scanFrom(cards, want, dir){
+    let dx = want;
+    for(let i = 0; i < 200; i++){
+      const move = shiftToClear(cards, dx, dir);
+      if(!move) return dx;
+      dx += move;
+    }
+    return null;
+  }
+
+  while(done.size < roots.length){
+    // place the cluster with the most children already on the canvas; the
+    // biggest cluster goes first and anchors everything else
+    let r = null, best = -1;
+    roots.forEach(u => {
+      if(done.has(u)) return;
+      const landed = [...(feeds.get(u) || [])].filter(id => pos[id]).length;
+      const score = landed * 10000 + clusterSize.get(u);
+      if(score > best){ best = score; r = u; }
+    });
+
+    const ry = (genCache[r.head.id] || 0) * ROW_H;
+    const targets = [...(feeds.get(r) || [])].filter(id => pos[id] && clusterOf[id] !== r);
+    const kidCx = targets.length
+      ? targets.reduce((s, id) => s + pos[id].x + pos[id].w / 2, 0) / targets.length
+      : null;
+
+    placeUnit(r, 0, ry);                       // provisional, to read offsets
+    const cards = Object.keys(clusterOf)
+      .filter(id => clusterOf[id] === r && pos[id])
+      .map(id => ({ id, x: pos[id].x, y: pos[id].y, w: pos[id].w }));
+
+    let want = farRight;
+    if(kidCx !== null){
+      const parentIds = [...new Set(targets.flatMap(id =>
+        (byId[id].parents || []).filter(pid => clusterOf[pid] === r && pos[pid])))];
+      if(parentIds.length){
+        const parCx = parentIds.reduce((s, id) => s + pos[id].x + pos[id].w / 2, 0) / parentIds.length;
+        want = kidCx - parCx;
+      }
+    }
+
+    const right = scanFrom(cards, want, 1);
+    const left = scanFrom(cards, want, -1);
+    let x = right;
+    if(left !== null && (right === null || Math.abs(left - want) < Math.abs(right - want))) x = left;
+    if(x === null) x = farRight;
+
+    placeUnit(r, x, ry);
+    cards.forEach(c => {
+      const span = { x0: c.x + x, x1: c.x + x + c.w };
+      if(!placedRows.has(c.y)) placedRows.set(c.y, []);
+      placedRows.get(c.y).push(span);
+      farRight = Math.max(farRight, span.x1 + ROOT_GAP_X);
+    });
+    done.add(r);
+  }
+
+  // clusters may have been pushed left of the origin; slide everything back
+  let minX = Infinity, maxX = -Infinity, maxY = 0;
+  Object.keys(pos).forEach(id => {
+    minX = Math.min(minX, pos[id].x);
+    maxX = Math.max(maxX, pos[id].x + pos[id].w);
+    maxY = Math.max(maxY, pos[id].y + CARD_H);
+  });
+  if(minX < 0) Object.keys(pos).forEach(id => { pos[id].x -= minX; });
+  const width = Math.max(1, maxX - Math.min(0, minX));
+  const height = Math.max(1, maxY);
 
   // ---- connector paths ----
   const links = [];
