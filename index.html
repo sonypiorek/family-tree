@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Drzewo Rogowskich</title>
+<title>Rodzinne krzaki</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600&family=Instrument+Sans:ital,wght@0,400;0,500;0,600&display=swap">
 <style>
   :root{
@@ -79,7 +79,30 @@
     text-wrap:balance;
   }
   .subtitle{color:var(--muted);font-size:13.5px;margin-top:3px;font-variant-numeric:tabular-nums;}
-  .controls{display:flex;gap:8px;}
+  .controls{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;}
+  .view-picker{display:flex;flex-direction:column;gap:4px;}
+  .view-picker span{font-size:12px;font-weight:500;color:var(--muted);padding-left:2px;}
+  .view-picker select{
+    font-family:inherit;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+    background:var(--btn-bg);
+    border:1px solid var(--edge);
+    border-radius:8px;
+    height:34px;
+    max-width:260px;
+    padding:0 30px 0 11px;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 15px,calc(100% - 11px) 15px;
+    background-size:5px 5px,5px 5px;
+    background-repeat:no-repeat;
+  }
+  .view-picker select:hover{background-color:var(--btn-hover);}
+  .view-picker select:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
   .controls button{
     font-family:inherit;
     font-size:14px;
@@ -166,22 +189,223 @@
     pointer-events:none;
     white-space:nowrap;
   }
+
+  /* --- powitanie --- */
+  .intro{
+    width:100%;
+    max-width:1400px;
+    margin:0 auto 14px;
+    background:var(--surface);
+    border:1px solid var(--edge);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    padding:16px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px 22px;
+    flex-wrap:wrap;
+  }
+  .intro p{
+    margin:0;
+    flex:1 1 380px;
+    font-size:14.5px;
+    line-height:1.62;
+    color:var(--ink);
+    max-width:78ch;
+    text-wrap:pretty;
+  }
+
+  /* --- buttons --- */
+  .btn-primary,.btn-ghost{
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    border-radius:8px;
+    height:38px;
+    padding:0 16px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-primary{
+    color:var(--ground);
+    background:var(--accent);
+    border:1px solid transparent;
+    box-shadow:var(--shadow);
+  }
+  .btn-primary:hover{filter:brightness(1.07);}
+  .btn-primary[disabled]{opacity:.5;cursor:default;filter:none;}
+  .btn-ghost{
+    color:var(--ink);
+    background:var(--btn-bg);
+    border:1px solid var(--edge);
+    font-weight:500;
+  }
+  .btn-ghost:hover{background:var(--btn-hover);}
+  .btn-primary:focus-visible,.btn-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* --- cards are clickable --- */
+  .person-card{cursor:pointer;}
+  [data-person]:hover .person-card{stroke:var(--accent);stroke-width:1.6;}
+  [data-person]:focus{outline:none;}
+  [data-person]:focus-visible .person-card{stroke:var(--accent);stroke-width:2;}
+
+  /* --- modal --- */
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:30;
+    background:rgba(12,16,14,.46);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+  }
+  .modal-backdrop[hidden]{display:none;}
+  .modal{
+    position:relative;
+    width:min(560px,100%);
+    max-height:min(86vh,840px);
+    overflow-y:auto;
+    background:var(--surface);
+    border:1px solid var(--edge);
+    border-radius:14px;
+    box-shadow:0 12px 44px rgba(0,0,0,.3);
+    padding:22px 22px 20px;
+  }
+  .modal h2{
+    font-family:'Bricolage Grotesque','Instrument Sans',system-ui,sans-serif;
+    font-weight:600;
+    font-size:20px;
+    letter-spacing:-0.01em;
+    margin:0 34px 4px 0;
+    color:var(--ink);
+    text-wrap:balance;
+  }
+  .modal-close{
+    position:absolute;
+    top:14px;
+    right:14px;
+    width:30px;
+    height:30px;
+    font-size:19px;
+    line-height:1;
+    color:var(--muted);
+    background:transparent;
+    border:1px solid transparent;
+    border-radius:7px;
+    cursor:pointer;
+  }
+  .modal-close:hover{background:var(--btn-hover);color:var(--ink);}
+  .facts{margin:14px 0 0;display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:14px;}
+  .facts dt{color:var(--muted);white-space:nowrap;}
+  .facts dd{margin:0;color:var(--ink);line-height:1.5;}
+  .facts-empty{
+    margin:12px 0 0;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--muted);
+  }
+  .modal-actions{margin-top:18px;}
+  .add-form{margin-top:18px;border-top:1px solid var(--edge);padding-top:16px;}
+  .add-form[hidden]{display:none;}
+  .add-form label{
+    display:block;
+    font-size:13px;
+    font-weight:500;
+    color:var(--muted);
+    margin:12px 0 5px;
+  }
+  .add-form label:first-child{margin-top:0;}
+  .add-form textarea,.add-form input{
+    width:100%;
+    font-family:inherit;
+    font-size:14px;
+    color:var(--ink);
+    background:var(--ground);
+    border:1px solid var(--edge);
+    border-radius:8px;
+    padding:9px 11px;
+    box-sizing:border-box;
+  }
+  .add-form textarea{resize:vertical;min-height:110px;line-height:1.5;}
+  .add-form textarea:focus,.add-form input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent;}
+  .add-form .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
+  .form-actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;}
+  .form-status{margin:12px 0 0;font-size:13.5px;line-height:1.5;min-height:1em;}
+  .form-status.ok{color:var(--accent);}
+  .form-status.err{color:#C0533A;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .form-status.err{color:#E8836A;}
+  }
+  :root[data-theme="dark"] .form-status.err{color:#E8836A;}
+
+  @media (max-width:560px){
+    .intro{padding:14px 15px;}
+    .intro p{font-size:14px;}
+    .btn-primary,.btn-ghost{width:100%;}
+    .modal{padding:18px 16px 16px;}
+  }
 </style>
 </head>
 <body>
 
   <header class="bar">
     <div>
-      <h1>Drzewo Rogowskich</h1>
+      <h1>Rodzinne krzaki</h1>
       <div class="subtitle" id="stats">Rodzina Rogowskich i linie potomne</div>
     </div>
     <div class="controls">
+      <label class="view-picker" for="view-select">
+        <span>Wybierz widok</span>
+        <select id="view-select"></select>
+      </label>
+      <button id="theme-toggle" aria-pressed="false">Tryb nocny</button>
       <button id="zoom-out" aria-label="Oddal">−</button>
       <button id="zoom-in" aria-label="Przybliż">+</button>
       <button id="zoom-fit">Dopasuj</button>
     </div>
   </header>
+
+  <div class="intro">
+    <p>Witamy przy naszych krzakach rodzinnych! Znajdziesz tutaj informacje o różnych członkach naszej rodziny. Jeśli znasz imiona bądź informacje o różnych członkach, kliknij na ich okienka i wpisz to czego jeszcze nie ma. Możesz też dodać informacje przez guzik poniżej.</p>
+    <button class="btn-primary" id="intro-add">Dodaj informacje</button>
+  </div>
+
   <div id="viewport"></div>
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close" id="modal-close" aria-label="Zamknij" title="Zamknij">&times;</button>
+      <h2 id="modal-title"></h2>
+      <dl class="facts" id="modal-facts"></dl>
+      <p class="facts-empty" id="modal-empty" hidden></p>
+
+      <div class="modal-actions" id="modal-actions">
+        <button class="btn-primary" id="open-form">Dodaj informacje</button>
+      </div>
+
+      <form class="add-form" id="add-form" hidden>
+        <label for="f-text">Co wiesz o tej osobie?</label>
+        <textarea id="f-text" name="text" maxlength="4000" required
+          placeholder="Imię, nazwisko rodowe, daty, miejsca, wspomnienia — cokolwiek pamiętasz."></textarea>
+
+        <label for="f-author">Twoje imię (opcjonalnie)</label>
+        <input id="f-author" name="author" type="text" maxlength="120" autocomplete="name">
+
+        <label for="f-email">Twój e-mail (opcjonalnie, gdybyśmy chcieli dopytać)</label>
+        <input id="f-email" name="email" type="email" maxlength="200" autocomplete="email">
+
+        <input class="hp" id="f-company" name="company" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" id="f-submit">Wyślij</button>
+          <button type="button" class="btn-ghost" id="f-cancel">Anuluj</button>
+        </div>
+        <p class="form-status" id="f-status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+
   <div id="empty" class="empty-state">
     Nikogo jeszcze nie dodano. Opowiedz mi o kimś — imię i jak jest spokrewniony z kimś już obecnym — a umieszczę tę osobę na drzewie.
   </div>
@@ -323,14 +547,14 @@ const people = [
   // Mirosław & Danuta's daughters
   { id: "anna-rogowska", name: "Anna Urbańska (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["miroslaw-rogowski", "danuta-paintak"], spouses: ["pawel-urbanski"] },
   { id: "pawel-urbanski", name: "Paweł Urbański", birth: "", death: "", gender: "m", parents: [], spouses: ["anna-rogowska"] },
-  { id: "katarzyna-pilkowska", name: "Katarzyna Piłkowska (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["miroslaw-rogowski", "danuta-paintak"], spouses: ["bartlomiej-pilkowski"] },
-  { id: "bartlomiej-pilkowski", name: "Bartłomiej Piłkowski", birth: "", death: "", gender: "m", parents: [], spouses: ["katarzyna-pilkowska"] },
+  { id: "katarzyna-pilkowska", name: "Katarzyna Pilkowska (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["miroslaw-rogowski", "danuta-paintak"], spouses: ["bartlomiej-pilkowski"] },
+  { id: "bartlomiej-pilkowski", name: "Bartłomiej Pilkowski", birth: "", death: "", gender: "m", parents: [], spouses: ["katarzyna-pilkowska"] },
 
   // Anna & Paweł's son
   { id: "maciej-urbanski", name: "Maciej Urbański", birth: "", death: "", gender: "m", parents: ["anna-rogowska", "pawel-urbanski"], spouses: [] },
 
   // Katarzyna & Bartłomiej's son
-  { id: "michal-pilkowski", name: "Michał Piłkowski", birth: "", death: "", gender: "m", parents: ["katarzyna-pilkowska", "bartlomiej-pilkowski"], spouses: [] },
+  { id: "michal-pilkowski", name: "Michał Pilkowski", birth: "", death: "", gender: "m", parents: ["katarzyna-pilkowska", "bartlomiej-pilkowski"], spouses: [] },
 
   // Józef (Zygmunt's son) & Hanna's children
   { id: "hanna-jozef-rogowska", name: "Hanna Rogowska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["jozef-zygmunt-rogowski"] },
@@ -676,12 +900,130 @@ function computeLayout(people){
 const SVGNS = 'http://www.w3.org/2000/svg';
 const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
 
+// ---------------------------------------------------------
+// Lookups used by the person dialog. Filled in by render().
+// ---------------------------------------------------------
+const PEOPLE_BY_ID = Object.fromEntries(people.map(p => [p.id, p]));
+let treeGen = {};
+
+function romanGen(id){
+  const g = treeGen[id];
+  return g === undefined ? '' : (ROMAN[g] || String(g + 1));
+}
+function namesOf(ids){
+  return (ids || []).map(id => (PEOPLE_BY_ID[id] || {}).name).filter(Boolean);
+}
+function childrenOf(id){
+  return people.filter(p => (p.parents || []).includes(id)).map(p => p.name);
+}
+function siblingsOf(p){
+  const par = p.parents || [];
+  if(!par.length) return [];
+  return people
+    .filter(o => o.id !== p.id && (o.parents || []).some(pid => par.includes(pid)))
+    .map(o => o.name);
+}
+
+// ---------------------------------------------------------
+// Families, for the "Wybierz widok" picker. Polish surnames are
+// gendered, so Rogowska / Rogowscy / Rogowskich all fold onto one
+// key. Placeholder cards ("Żona Jacka", "Sześcioro dzieci") carry no
+// usable surname, so they are assigned by hand.
+// ---------------------------------------------------------
+const FAMILY_OVERRIDES = {
+  'rodzice-rogowscy':       ['Rogowski'],
+  'jacek-wife-unknown':     ['Rogowski'],
+  'jacek-child-unknown':    ['Rogowski'],
+  'jaroslaw-son1-unknown':  ['Rogowski'],
+  'jaroslaw-son2-unknown':  ['Rogowski'],
+  'rodzice-skrzypcowie':    ['Skrzypiec'],
+  'zona-jozefa-skrzypca':   ['Skrzypiec'],
+  'kazimiera-skrzypiec':    ['Skrzypiec'],
+  'corka-skrzypiec':        ['Skrzypiec'],
+  'syn1-skrzypiec':         ['Skrzypiec'],
+  'syn2-skrzypiec':         ['Skrzypiec'],
+  'dzieci-kazimiery':       ['Skrzypiec'],
+  'dzieci-corki-skrzypiec': ['Skrzypiec'],
+  'dzieci-syna1-skrzypiec': ['Skrzypiec'],
+  'dzieci-syna2-skrzypiec': ['Skrzypiec'],
+  'syn-tulecki':            ['Tulecki'],
+  'syn-rownicki':           ['Równicki'],
+  'kowalski-partner':       ['Kowalski'],
+};
+
+const NOT_A_SURNAME = /^(niewiadomego|nieznane|nieznana|nieznany|imię|imiona|dzieci|dziecko|partner|była?|były)$/i;
+
+function normalizeSurname(s){
+  const w = (s || '').replace(/[„”"']/g, '').trim();
+  if(/(skich|skiego|skiej|scy|ska|ski)$/.test(w)) return w.replace(/(skich|skiego|skiej|scy|ska|ski)$/, 'ski');
+  if(/(ckich|ckiego|ckiej|ccy|cka|cki)$/.test(w))  return w.replace(/(ckich|ckiego|ckiej|ccy|cka|cki)$/, 'cki');
+  return w;
+}
+
+// "Rogowski" -> "Rogowscy", "Równicki" -> "Równiccy", others stay as they are
+function familyLabel(key){
+  if(/ski$/.test(key)) return key.replace(/ski$/, 'scy');
+  if(/cki$/.test(key)) return key.replace(/cki$/, 'ccy');
+  return key;
+}
+
+function familiesOf(p){
+  if(FAMILY_OVERRIDES[p.id]) return FAMILY_OVERRIDES[p.id];
+  const out = new Set();
+  const paren = p.name.match(/\(([^)]*)\)/);
+  const base = p.name.replace(/\s*\([^)]*\)\s*/g, ' ').replace(/[„”"']/g, '').trim();
+  const words = base.split(/\s+/).filter(Boolean);
+  const last = words[words.length - 1];
+  const usable = w => w && !NOT_A_SURNAME.test(w) && /^[A-ZĄĆĘŁŃÓŚŻŹ]/.test(w);
+  if(usable(last)) out.add(normalizeSurname(last));
+  if(paren){
+    const m = paren[1].match(/z\s*d\.\s*([^,)]+)/);
+    const maiden = m ? m[1].trim().split(/\s+/)[0] : '';
+    if(usable(maiden)) out.add(normalizeSurname(maiden));
+  }
+  return [...out];
+}
+
+const FAMILY_MEMBERS = {};
+people.forEach(p => familiesOf(p).forEach(f => {
+  if(!FAMILY_MEMBERS[f]) FAMILY_MEMBERS[f] = new Set();
+  FAMILY_MEMBERS[f].add(p.id);
+}));
+
+// one-person "families" are just a married-in surname; not worth a view
+const FAMILY_KEYS = Object.keys(FAMILY_MEMBERS)
+  .filter(k => FAMILY_MEMBERS[k].size >= 2)
+  .sort((a, b) => familyLabel(a).localeCompare(familyLabel(b), 'pl'));
+
+// A family view keeps the matching people plus their spouses, so couples
+// stay together, and drops links pointing outside the view.
+function peopleForFamily(key){
+  const ids = new Set(FAMILY_MEMBERS[key] || []);
+  [...ids].forEach(id => (PEOPLE_BY_ID[id].spouses || []).forEach(s => {
+    if(PEOPLE_BY_ID[s]) ids.add(s);
+  }));
+  return people.filter(p => ids.has(p.id)).map(p => ({
+    ...p,
+    parents: (p.parents || []).filter(id => ids.has(id)),
+    spouses: (p.spouses || []).filter(id => ids.has(id)),
+  }));
+}
+
+let currentView = 'all';
+let activePeople = people;
+
+function setView(key){
+  currentView = FAMILY_MEMBERS[key] ? key : 'all';
+  activePeople = currentView === 'all' ? people : peopleForFamily(currentView);
+  render();
+}
+
 function render(){
   const viewport = document.getElementById('viewport');
   const emptyState = document.getElementById('empty');
   viewport.innerHTML = '';
 
-  if(!people.length){
+  if(!activePeople.length){
     emptyState.style.display = 'block';
     viewport.style.display = 'none';
     return;
@@ -689,12 +1031,18 @@ function render(){
   emptyState.style.display = 'none';
   viewport.style.display = '';
 
-  const { pos, CARD_H, maxGen, width, height, branchColor, links, gen } = computeLayout(people);
+  const { pos, CARD_H, maxGen, width, height, branchColor, links, gen } = computeLayout(activePeople);
+  // generation numbers in the dialog always come from the whole tree,
+  // so a person does not change generation when a family view narrows it
+  if(currentView === 'all') treeGen = gen;
 
   const plOsoby = n => { const u = n%10, t = n%100; if(n===1) return 'osoba'; if(u>=2 && u<=4 && (t<12 || t>14)) return 'osoby'; return 'osób'; };
   const plPokolen = n => { const u = n%10, t = n%100; if(n===1) return 'pokolenie'; if(u>=2 && u<=4 && (t<12 || t>14)) return 'pokolenia'; return 'pokoleń'; };
+  const viewNote = currentView === 'all'
+    ? 'całe drzewo genealogiczne'
+    : `widok rodziny: ${familyLabel(currentView)}`;
   document.getElementById('stats').textContent =
-    `${people.length} ${plOsoby(people.length)} · ${maxGen+1} ${plPokolen(maxGen+1)} · rodzina Rogowskich i linie potomne`;
+    `${activePeople.length} ${plOsoby(activePeople.length)} · ${maxGen+1} ${plPokolen(maxGen+1)} · ${viewNote}`;
 
   const PAD = 60;
   const worldW = width + PAD * 2;
@@ -733,7 +1081,7 @@ function render(){
 
   // spouse links
   const drawnSpousePairs = new Set();
-  people.forEach(p => {
+  activePeople.forEach(p => {
     (p.spouses||[]).forEach(sid => {
       if(!pos[sid]) return;
       const key = [p.id, sid].sort().join('|');
@@ -753,10 +1101,14 @@ function render(){
   tip.id = 'tooltip';
 
   // person cards
-  people.forEach(p => {
+  activePeople.forEach(p => {
     const { x, y, w } = pos[p.id];
     const card = document.createElementNS(SVGNS,'g');
     card.setAttribute('transform', `translate(${x},${y})`);
+    card.setAttribute('data-person', p.id);
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `${p.name} — otwórz informacje`);
 
     const rect = document.createElementNS(SVGNS,'rect');
     rect.setAttribute('class','person-card');
@@ -801,6 +1153,9 @@ function render(){
       tip.style.top = (e.clientY - r.top + 16) + 'px';
     };
     card.onpointerleave = () => { tip.style.display = 'none'; };
+    card.onkeydown = e => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPerson(p.id); }
+    };
 
     g.appendChild(card);
   });
@@ -835,11 +1190,20 @@ function render(){
 
   const pointers = new Map();
   let lastMid = null, lastDist = null;
+  // a press that never really moves is a tap, not a pan — open that person
+  let downAt = null, dragged = false, multiTouch = false;
   viewport.onpointerdown = e => {
     tip.style.display = 'none';
     viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if(pointers.size === 1) viewport.classList.add('dragging');
+    if(pointers.size === 1){
+      viewport.classList.add('dragging');
+      downAt = { x: e.clientX, y: e.clientY };
+      dragged = false;
+      multiTouch = false;
+    } else {
+      multiTouch = true;
+    }
     lastMid = null; lastDist = null;
   };
   viewport.onpointermove = e => {
@@ -847,6 +1211,7 @@ function render(){
     const prev = pointers.get(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if(pointers.size === 1){
+      if(downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6) dragged = true;
       view.x += e.clientX - prev.x;
       view.y += e.clientY - prev.y;
       applyView();
@@ -865,9 +1230,17 @@ function render(){
     }
   };
   const endPointer = e => {
+    const wasLast = pointers.size === 1;
     pointers.delete(e.pointerId);
     if(pointers.size === 0) viewport.classList.remove('dragging');
     lastMid = null; lastDist = null;
+    if(e.type === 'pointerup' && wasLast && !dragged && !multiTouch && downAt){
+      // pointer capture keeps the event on the viewport, so hit-test by position
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const host = el && el.closest ? el.closest('[data-person]') : null;
+      if(host) openPerson(host.getAttribute('data-person'));
+    }
+    downAt = null;
   };
   viewport.onpointerup = endPointer;
   viewport.onpointercancel = endPointer;
@@ -886,13 +1259,188 @@ function render(){
     if(worldW * view.k <= vw){
       view.x = (vw - worldW * view.k) / 2;
     } else {
-      const rootP = pos[people[0].id];
+      const rootP = pos[activePeople[0].id];
       const rootCx = (rootP.x + rootP.w/2 + PAD) * view.k;
       view.x = Math.max(vw - worldW * view.k - 8, Math.min(8, vw/2 - rootCx));
     }
     view.y = Math.max((vh - worldH * view.k) / 2, 12);
     applyView();
   })();
+}
+
+// ---------------------------------------------------------
+// Person dialog and the "Dodaj informacje" form.
+// Submissions POST to the family-tree-api Worker, which mails them on.
+// ---------------------------------------------------------
+const API_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'https://www.rodzinnekrzaki.pl/api/submit'
+  : '/api/submit';
+
+const modal       = document.getElementById('modal');
+const modalTitle  = document.getElementById('modal-title');
+const modalFacts  = document.getElementById('modal-facts');
+const modalEmpty  = document.getElementById('modal-empty');
+const modalActions= document.getElementById('modal-actions');
+const modalClose  = document.getElementById('modal-close');
+const addForm     = document.getElementById('add-form');
+const fText       = document.getElementById('f-text');
+const fAuthor     = document.getElementById('f-author');
+const fEmail      = document.getElementById('f-email');
+const fCompany    = document.getElementById('f-company');
+const fSubmit     = document.getElementById('f-submit');
+const fStatus     = document.getElementById('f-status');
+
+let current = null;      // person the dialog is about; null = a general note
+let lastFocused = null;
+
+function addFact(label, value){
+  const v = Array.isArray(value) ? value.filter(Boolean) : value;
+  if(!v || (Array.isArray(v) && !v.length)) return;
+  const dt = document.createElement('dt');
+  dt.textContent = label;
+  const dd = document.createElement('dd');
+  dd.textContent = Array.isArray(v) ? v.join(', ') : v;
+  modalFacts.append(dt, dd);
+}
+
+function openPerson(id){
+  const p = PEOPLE_BY_ID[id];
+  if(!p) return;
+  const parents = namesOf(p.parents);
+  const spouses = namesOf(p.spouses);
+  current = { id: p.id, name: p.name, generation: romanGen(p.id) };
+
+  modalTitle.textContent = p.name;
+  modalFacts.replaceChildren();
+  addFact('Pokolenie', current.generation);
+  addFact('Lata', yearsText(p));
+  addFact(parents.length > 1 ? 'Rodzice' : 'Rodzic', parents);
+  addFact('Rodzeństwo', siblingsOf(p));
+  addFact(spouses.length > 1 ? 'Małżonkowie' : 'Małżeństwo', spouses);
+  addFact('Dzieci', childrenOf(p.id));
+
+  const thin = modalFacts.children.length <= 2;   // generation only
+  modalEmpty.hidden = !thin;
+  modalEmpty.textContent = thin
+    ? 'Nie mamy jeszcze więcej informacji o tej osobie. Jeśli coś wiesz, dopisz poniżej.'
+    : '';
+  showModal();
+}
+
+function openGeneral(){
+  current = null;
+  modalTitle.textContent = 'Dodaj informacje';
+  modalFacts.replaceChildren();
+  modalEmpty.hidden = false;
+  modalEmpty.textContent = 'Napisz, co wiesz o rodzinie. Jeśli chodzi o konkretną osobę, najprościej kliknąć jej okienko na drzewie.';
+  showModal();
+  revealForm();
+}
+
+function showModal(){
+  lastFocused = document.activeElement;
+  addForm.reset();
+  fStatus.textContent = '';
+  fStatus.className = 'form-status';
+  fSubmit.disabled = false;
+  addForm.hidden = true;
+  modalActions.hidden = false;
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+  modalClose.focus();
+}
+
+function revealForm(){
+  modalActions.hidden = true;
+  addForm.hidden = false;
+  fText.focus();
+}
+
+function closeModal(){
+  modal.hidden = true;
+  document.body.style.overflow = '';
+  if(lastFocused && lastFocused.focus) lastFocused.focus();
+}
+
+document.getElementById('intro-add').onclick = openGeneral;
+document.getElementById('open-form').onclick = revealForm;
+document.getElementById('f-cancel').onclick = closeModal;
+modalClose.onclick = closeModal;
+modal.addEventListener('pointerdown', e => { if(e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+addForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = fText.value.trim();
+  if(!text){
+    fStatus.className = 'form-status err';
+    fStatus.textContent = 'Napisz najpierw, co chcesz dodać.';
+    fText.focus();
+    return;
+  }
+  fSubmit.disabled = true;
+  fStatus.className = 'form-status';
+  fStatus.textContent = 'Wysyłanie…';
+  try{
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        personId:   current ? current.id : '',
+        personName: current ? current.name : '',
+        generation: current ? current.generation : '',
+        text,
+        author: fAuthor.value.trim(),
+        email:  fEmail.value.trim(),
+        company: fCompany.value
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    fStatus.className = 'form-status ok';
+    fStatus.textContent = 'Dziękujemy! Informacja została wysłana.';
+    fText.value = '';
+    setTimeout(() => { if(!modal.hidden) closeModal(); }, 2400);
+  }catch(err){
+    fSubmit.disabled = false;
+    fStatus.className = 'form-status err';
+    fStatus.textContent = 'Nie udało się wysłać. Spróbuj jeszcze raz za chwilę.';
+  }
+});
+
+// ---------------------------------------------------------
+// View picker and day/night toggle
+// ---------------------------------------------------------
+const viewSelect = document.getElementById('view-select');
+viewSelect.add(new Option('Całe drzewo genealogiczne', 'all'));
+FAMILY_KEYS.forEach(k => viewSelect.add(new Option(`${familyLabel(k)} (${FAMILY_MEMBERS[k].size})`, k)));
+viewSelect.onchange = () => setView(viewSelect.value);
+
+const themeBtn = document.getElementById('theme-toggle');
+const rootEl = document.documentElement;
+
+function storedTheme(){
+  try { return localStorage.getItem('drzewo-theme'); } catch { return null; }
+}
+function systemTheme(){
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+function applyTheme(t, remember){
+  rootEl.setAttribute('data-theme', t);
+  themeBtn.textContent = t === 'dark' ? 'Tryb dzienny' : 'Tryb nocny';
+  themeBtn.setAttribute('aria-pressed', String(t === 'dark'));
+  if(remember){ try { localStorage.setItem('drzewo-theme', t); } catch {} }
+}
+
+applyTheme(storedTheme() || systemTheme(), false);
+themeBtn.onclick = () => {
+  applyTheme(rootEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+};
+// follow the system while the visitor has not picked a side
+if(window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if(!storedTheme()) applyTheme(e.matches ? 'dark' : 'light', false);
+  });
 }
 
 render();
