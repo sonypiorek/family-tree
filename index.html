@@ -1042,6 +1042,19 @@ const FAMILY_KEYS = Object.keys(FAMILY_MEMBERS)
   .filter(k => FAMILY_MEMBERS[k].size >= 2)
   .sort((a, b) => familyLabel(a).localeCompare(familyLabel(b), 'pl'));
 
+// Każda rodzina ma swój adres, np. /czajor — do wysłania tej rodzinie.
+const PL_ASCII = { 'ą':'a','ć':'c','ę':'e','ł':'l','ń':'n','ó':'o','ś':'s','ż':'z','ź':'z' };
+function slugify(s){
+  return s.toLowerCase().replace(/[ąćęłńóśżź]/g, c => PL_ASCII[c]).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+const SLUG_OF_FAMILY = {};
+const FAMILY_OF_SLUG = {};
+FAMILY_KEYS.forEach(k => {
+  const slug = slugify(familyLabel(k));
+  SLUG_OF_FAMILY[k] = slug;
+  FAMILY_OF_SLUG[slug] = k;
+});
+
 const CHILDREN_OF = {};
 people.forEach(p => (p.parents || []).forEach(par => {
   if(!CHILDREN_OF[par]) CHILDREN_OF[par] = [];
@@ -1686,7 +1699,28 @@ addForm.addEventListener('submit', async e => {
 const viewSelect = document.getElementById('view-select');
 viewSelect.add(new Option('Całe drzewo genealogiczne', 'all'));
 FAMILY_KEYS.forEach(k => viewSelect.add(new Option(`${familyLabel(k)} (${FAMILY_MEMBERS[k].size})`, k)));
-viewSelect.onchange = () => setView(viewSelect.value);
+
+const BASE_TITLE = 'Rodzinne krzaki';
+
+function keyFromPath(){
+  const slug = decodeURIComponent(location.pathname).replace(/^\/+|\/+$/g, '').toLowerCase();
+  return FAMILY_OF_SLUG[slug] || 'all';
+}
+
+function showView(key, push){
+  setView(key);
+  viewSelect.value = currentView;
+  document.title = currentView === 'all'
+    ? BASE_TITLE
+    : `${familyLabel(currentView)} — ${BASE_TITLE}`;
+  const path = currentView === 'all' ? '/' : '/' + SLUG_OF_FAMILY[currentView];
+  if(location.pathname !== path){
+    history[push ? 'pushState' : 'replaceState']({}, '', path + location.search);
+  }
+}
+
+viewSelect.onchange = () => showView(viewSelect.value, true);
+window.addEventListener('popstate', () => showView(keyFromPath(), false));
 
 const themeBtn = document.getElementById('theme-toggle');
 const rootEl = document.documentElement;
@@ -1715,7 +1749,10 @@ if(window.matchMedia){
   });
 }
 
-render();
+// open whatever view the address asks for; an unknown path falls back to the
+// whole tree and tidies itself up to "/"
+showView(keyFromPath(), false);
+
 // re-render once the web fonts arrive so card widths are measured with the real face
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => render());
 </script>
