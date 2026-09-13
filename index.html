@@ -1030,12 +1030,12 @@ const DEPTH_OF = (() => {
 })();
 
 // A family view is read from the youngest person carrying the surname:
-// everyone with that name, then the direct line upwards — parents,
-// grandparents, great-grandparents and so on — and, around the parents and
-// grandparents, their brothers and sisters with their own husbands, wives
-// and children. Older generations stay as the direct line, otherwise every
-// view swells into most of the tree.
-const SIDEWAYS_LEVELS = 2;   // 1 = parents, 2 = parents and grandparents
+// everyone with that name, their parents, the parents' brothers and sisters
+// with their own husbands, wives and children, and then the direct line
+// upwards — grandparents, great-grandparents and so on. Only the parents'
+// generation opens sideways; widening it further pulls most of the tree into
+// every view.
+const SIDEWAYS_LEVELS = 1;   // 1 = parents only, 2 = parents and grandparents
 
 function peopleForFamily(key){
   const core = [...(FAMILY_MEMBERS[key] || [])];
