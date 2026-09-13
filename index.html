@@ -586,11 +586,11 @@ const people = [
 
   // Stanisława's birth family — her brother Lech and his line
   { id: "rodzice-kaczmarkowie", name: "Rodzice Kaczmarkowie (imiona nieznane)", birth: "", death: "", gender: "", parents: [], spouses: [] },
-  { id: "lech-kaczmarek", name: "Lech Kaczmarek", birth: "", death: "", gender: "m", parents: ["rodzice-kaczmarkowie"], spouses: ["zona-lecha"] },
-  { id: "zona-lecha", name: "Żona Lecha (imię nieznane)", birth: "", death: "", gender: "f", parents: [], spouses: ["lech-kaczmarek"] },
-  { id: "bogdan-kaczmarek", name: "Bogdan Kaczmarek", birth: "", death: "", gender: "m", parents: ["lech-kaczmarek", "zona-lecha"], spouses: ["wanda-kaczmarek"] },
+  { id: "lech-kaczmarek", name: "Lech Kaczmarek", birth: "", death: "", gender: "m", parents: ["rodzice-kaczmarkowie"], spouses: ["melania-kaczmarek"] },
+  { id: "melania-kaczmarek", name: "Melania Kaczmarek (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["lech-kaczmarek"] },
+  { id: "bogdan-kaczmarek", name: "Bogdan Kaczmarek", birth: "", death: "", gender: "m", parents: ["lech-kaczmarek", "melania-kaczmarek"], spouses: ["wanda-kaczmarek"] },
   { id: "wanda-kaczmarek", name: "Wanda Kaczmarek (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["bogdan-kaczmarek"] },
-  { id: "waldemar-kaczmarek", name: "Waldemar Kaczmarek", birth: "", death: "", gender: "m", parents: ["lech-kaczmarek", "zona-lecha"], spouses: [] },
+  { id: "waldemar-kaczmarek", name: "Waldemar Kaczmarek", birth: "", death: "", gender: "m", parents: ["lech-kaczmarek", "melania-kaczmarek"], spouses: [] },
   { id: "adam-kaczmarek", name: "Adam Kaczmarek", birth: "", death: "", gender: "m", parents: ["bogdan-kaczmarek", "wanda-kaczmarek"], spouses: [] },
 
   // Elżbieta's sisters
@@ -1073,7 +1073,6 @@ const FAMILY_OVERRIDES = {
   'zona-jozefa-piorka':     ['Piórek'],
   'maz-elzbiety-jarosinskiej': [],
   'rodzice-kaczmarkowie':   ['Kaczmarek'],
-  'zona-lecha':             [],
 };
 
 const NOT_A_SURNAME = /^(niewiadomego|nieznane|nieznana|nieznany|imię|imiona|dzieci|dziecko|partner|była?|były)$/i;
