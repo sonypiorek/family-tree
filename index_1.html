@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drzewo Rogowskich</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600&family=Instrument+Sans:ital,wght@0,400;0,500;0,600&display=swap">
+<style>
+  :root{
+    --ground:#F3F5F2;
+    --surface:#FFFFFF;
+    --ink:#1B2320;
+    --muted:#68736D;
+    --edge:#DEE3DF;
+    --dot:#E4E9E4;
+    --spouse:#9AA59E;
+    --accent:#2F6D5A;
+    --btn-bg:#FFFFFF;
+    --btn-hover:#EAEFEB;
+    --shadow:0 1px 2px rgba(27,35,32,.06), 0 2px 8px rgba(27,35,32,.05);
+    --card-shadow:drop-shadow(0 1px 2px rgba(27,35,32,.10));
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#131715;
+      --surface:#1D2320;
+      --ink:#E8ECE9;
+      --muted:#8F9C95;
+      --edge:#343D38;
+      --dot:#242C28;
+      --spouse:#5C6862;
+      --accent:#57B394;
+      --btn-bg:#1D2320;
+      --btn-hover:#28302C;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25);
+      --card-shadow:drop-shadow(0 2px 4px rgba(0,0,0,.45));
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#131715;
+    --surface:#1D2320;
+    --ink:#E8ECE9;
+    --muted:#8F9C95;
+    --edge:#343D38;
+    --dot:#242C28;
+    --spouse:#5C6862;
+    --accent:#57B394;
+    --btn-bg:#1D2320;
+    --btn-hover:#28302C;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25);
+    --card-shadow:drop-shadow(0 2px 4px rgba(0,0,0,.45));
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--ground);color:var(--ink);}
+  body{
+    font-family:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:0 16px 16px;
+  }
+  .bar{
+    width:100%;
+    max-width:1400px;
+    margin:0 auto;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px 16px;
+    flex-wrap:wrap;
+    padding-block:20px 14px;
+  }
+  h1{
+    font-family:'Bricolage Grotesque','Instrument Sans',system-ui,sans-serif;
+    font-weight:600;
+    font-size:24px;
+    letter-spacing:-0.01em;
+    margin:0;
+    text-wrap:balance;
+  }
+  .subtitle{color:var(--muted);font-size:13.5px;margin-top:3px;font-variant-numeric:tabular-nums;}
+  .controls{display:flex;gap:8px;}
+  .controls button{
+    font-family:inherit;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+    background:var(--btn-bg);
+    border:1px solid var(--edge);
+    border-radius:8px;
+    min-width:34px;
+    height:34px;
+    padding:0 12px;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .controls button:hover{background:var(--btn-hover);}
+  .controls button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  #viewport{
+    position:relative;
+    width:100%;
+    max-width:1400px;
+    margin:0 auto;
+    flex:1;
+    min-height:440px;
+    height:calc(100vh - 140px);
+    background-color:var(--surface);
+    background-image:radial-gradient(var(--dot) 1.1px, transparent 1.1px);
+    background-size:26px 26px;
+    border:1px solid var(--edge);
+    border-radius:12px;
+    overflow:hidden;
+    cursor:grab;
+    touch-action:none;
+  }
+  #viewport.dragging{cursor:grabbing;}
+  #viewport svg{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .empty-state{
+    max-width:440px;
+    margin:40px auto 0;
+    text-align:center;
+    color:var(--muted);
+    line-height:1.6;
+    font-size:15px;
+  }
+  .person-card{
+    fill:var(--surface);
+    stroke:var(--edge);
+    stroke-width:1;
+    filter:var(--card-shadow);
+  }
+  .person-name{
+    font-size:13px;
+    font-weight:600;
+    fill:var(--ink);
+    font-family:'Instrument Sans',system-ui,sans-serif;
+  }
+  .person-years{
+    font-size:11.5px;
+    fill:var(--muted);
+    font-family:'Instrument Sans',system-ui,sans-serif;
+    font-variant-numeric:tabular-nums;
+  }
+  .link-parent{
+    stroke:var(--spouse);
+    stroke-width:1.5;
+    fill:none;
+    stroke-linecap:round;
+  }
+  .link-spouse{
+    stroke:var(--spouse);
+    stroke-width:1.4;
+    stroke-dasharray:2 4;
+    stroke-linecap:round;
+  }
+  #tooltip{
+    position:absolute;
+    z-index:5;
+    display:none;
+    background:var(--ink);
+    color:var(--ground);
+    font-size:12px;
+    font-weight:500;
+    padding:4px 10px;
+    border-radius:6px;
+    pointer-events:none;
+    white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+
+  <header class="bar">
+    <div>
+      <h1>Drzewo Rogowskich</h1>
+      <div class="subtitle" id="stats">Rodzina Rogowskich i linie potomne</div>
+    </div>
+    <div class="controls">
+      <button id="zoom-out" aria-label="Oddal">−</button>
+      <button id="zoom-in" aria-label="Przybliż">+</button>
+      <button id="zoom-fit">Dopasuj</button>
+    </div>
+  </header>
+  <div id="viewport"></div>
+  <div id="empty" class="empty-state">
+    Nikogo jeszcze nie dodano. Opowiedz mi o kimś — imię i jak jest spokrewniony z kimś już obecnym — a umieszczę tę osobę na drzewie.
+  </div>
+
+<script>
+// ---------------------------------------------------------
+// DATA: edit this array by telling Claude who to add.
+// Each person: { id, name, birth, death, gender, parents: [ids], spouses: [ids] }
+// gender is only used for subtle card accent (optional: 'm' | 'f' | '')
+// ---------------------------------------------------------
+const people = [
+  // placeholder for Józef's (and his siblings') parents — names not yet known
+  { id: "rodzice-rogowscy", name: "Rodzice Rogowscy (imiona nieznane)", birth: "", death: "", gender: "", parents: [], spouses: [] },
+
+  { id: "jozef-rogowski", name: "Józef Rogowski", birth: "", death: "", gender: "m", parents: ["rodzice-rogowscy"], spouses: ["katarzyna-rogowska"] },
+  { id: "katarzyna-rogowska", name: "Katarzyna Rogowska (z d. Skrzypiec)", birth: "", death: "", gender: "f", parents: ["rodzice-skrzypcowie"], spouses: ["jozef-rogowski"] },
+
+  // Józef's siblings
+  { id: "wincenty-rogowski", name: "Wincenty Rogowski", birth: "", death: "", gender: "m", parents: ["rodzice-rogowscy"], spouses: ["wiktoria-rogowska"] },
+  { id: "jan-rogowski", name: "Jan Rogowski", birth: "", death: "w wieku 32 lat", gender: "m", parents: ["rodzice-rogowscy"], spouses: ["wiktoria-rogowska"] },
+  // Wiktoria married Jan; after his early death she married his brother Wincenty
+  { id: "wiktoria-rogowska", name: "Wiktoria Rogowska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["jan-rogowski", "wincenty-rogowski"] },
+
+  // Jan & Wiktoria's children
+  { id: "stanislawa-rogowska", name: "Stanisława Rogowska", birth: "", death: "", gender: "f", parents: ["jan-rogowski", "wiktoria-rogowska"], spouses: [] },
+  { id: "genowefa-rogowska", name: "Genowefa Rogowska", birth: "", death: "", gender: "f", parents: ["jan-rogowski", "wiktoria-rogowska"], spouses: [] },
+  { id: "marian-rogowski", name: "Marian Rogowski", birth: "", death: "", gender: "m", parents: ["jan-rogowski", "wiktoria-rogowska"], spouses: [] },
+
+  // Wincenty & Wiktoria's children
+  { id: "henryk-rogowski", name: "Henryk Rogowski", birth: "", death: "", gender: "m", parents: ["wincenty-rogowski", "wiktoria-rogowska"], spouses: [] },
+  { id: "mieczyslaw-rogowski", name: "Mieczysław Rogowski", birth: "", death: "", gender: "m", parents: ["wincenty-rogowski", "wiktoria-rogowska"], spouses: [] },
+  { id: "kazimiera-rogowska", name: "Kazimiera Rogowska", birth: "", death: "", gender: "f", parents: ["wincenty-rogowski", "wiktoria-rogowska"], spouses: [] },
+  { id: "siostra-bala", name: "Bała (z d. Rogowska, imię nieznane)", birth: "", death: "", gender: "f", parents: ["rodzice-rogowscy"], spouses: ["maz-bala"] },
+  { id: "maz-bala", name: "Bała (imię nieznane)", birth: "", death: "", gender: "m", parents: [], spouses: ["siostra-bala"] },
+  { id: "siostra-rownicka", name: "Równicka (z d. Rogowska, imię nieznane)", birth: "", death: "", gender: "f", parents: ["rodzice-rogowscy"], spouses: ["maz-rownicki"] },
+  { id: "maz-rownicki", name: "Równicki (imię nieznane)", birth: "", death: "", gender: "m", parents: [], spouses: ["siostra-rownicka"] },
+
+  // Równicki children
+  { id: "janina-rownicka", name: "Janina Równicka", birth: "", death: "", gender: "f", parents: ["siostra-rownicka", "maz-rownicki"], spouses: [] },
+  { id: "maria-rownicka", name: "Maria Równicka", birth: "", death: "", gender: "f", parents: ["siostra-rownicka", "maz-rownicki"], spouses: [] },
+  { id: "stanislawa-rownicka", name: "Stanisława Równicka", birth: "", death: "", gender: "f", parents: ["siostra-rownicka", "maz-rownicki"], spouses: [] },
+  { id: "syn-rownicki", name: "Syn Równickich (imię nieznane)", birth: "", death: "", gender: "m", parents: ["siostra-rownicka", "maz-rownicki"], spouses: [] },
+
+  { id: "edward-rogowski", name: "Edward Rogowski", birth: "", death: "", gender: "m", parents: ["jozef-rogowski", "katarzyna-rogowska"], spouses: ["hanna-rogowska"] },
+  { id: "hanna-rogowska", name: "Hanna Rogowska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["edward-rogowski"] },
+
+  { id: "stefania-rogowska", name: "Stefania Kosińska (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["jozef-rogowski", "katarzyna-rogowska"], spouses: ["franciszek-kosinski"] },
+  { id: "franciszek-kosinski", name: "Franciszek Kosiński", birth: "", death: "", gender: "m", parents: [], spouses: ["stefania-rogowska"] },
+
+  { id: "zygmunt-rogowski", name: "Zygmunt Rogowski", birth: "", death: "", gender: "m", parents: ["jozef-rogowski", "katarzyna-rogowska"], spouses: ["katarzyna-slusarek"] },
+  { id: "katarzyna-slusarek", name: "Katarzyna Rogowska (z d. Ślusarek)", birth: "", death: "", gender: "f", parents: [], spouses: ["zygmunt-rogowski"] },
+
+  { id: "eugeniusz-rogowski", name: "Eugeniusz Rogowski", birth: "", death: "", gender: "m", parents: ["jozef-rogowski", "katarzyna-rogowska"], spouses: ["janina-rogowska"] },
+  { id: "janina-rogowska", name: "Janina Rogowska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["eugeniusz-rogowski"] },
+
+  { id: "tadeusz-rogowski", name: "Tadeusz Rogowski", birth: "", death: "", gender: "m", parents: ["jozef-rogowski", "katarzyna-rogowska"], spouses: ["maria-blasiak"] },
+  { id: "maria-blasiak", name: "Maria Rogowska (z d. Blasiak)", birth: "", death: "", gender: "f", parents: [], spouses: ["tadeusz-rogowski"] },
+
+  { id: "maria-rogowska", name: "Maria Zabojszcz (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["jozef-rogowski", "katarzyna-rogowska"], spouses: ["bronislaw-zabojszcz"] },
+  { id: "bronislaw-zabojszcz", name: "Bronisław Zabojszcz", birth: "", death: "", gender: "m", parents: [], spouses: ["maria-rogowska"] },
+
+  // Maria & Bronisław's children — the Zabojszcz line
+  { id: "marek-zabojszcz", name: "Marek Zabojszcz", birth: "", death: "", gender: "m", parents: ["maria-rogowska", "bronislaw-zabojszcz"], spouses: ["maria-pietruszka"] },
+  { id: "maria-pietruszka", name: "Maria Zabojszcz (z d. Pietruszka)", birth: "", death: "", gender: "f", parents: [], spouses: ["marek-zabojszcz"] },
+  { id: "jacek-zabojszcz", name: "Jacek Zabojszcz", birth: "", death: "", gender: "m", parents: ["maria-rogowska", "bronislaw-zabojszcz"], spouses: ["ewa-zabojszcz"] },
+  { id: "ewa-zabojszcz", name: "Ewa Zabojszcz (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["jacek-zabojszcz"] },
+  { id: "krystyna-mieszkowska", name: "Krystyna Mieszkowska (z d. Zabojszcz)", birth: "", death: "", gender: "f", parents: ["maria-rogowska", "bronislaw-zabojszcz"], spouses: ["piotr-mieszkowski"] },
+  { id: "piotr-mieszkowski", name: "Piotr Mieszkowski", birth: "", death: "", gender: "m", parents: [], spouses: ["krystyna-mieszkowska"] },
+
+  // Marek & Maria's children
+  { id: "tomasz-zabojszcz", name: "Tomasz Zabojszcz", birth: "", death: "", gender: "m", parents: ["marek-zabojszcz", "maria-pietruszka"], spouses: ["roza-zabojszcz"] },
+  { id: "roza-zabojszcz", name: "Róża Zabojszcz (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["tomasz-zabojszcz"] },
+  { id: "ignacy-zabojszcz", name: "Ignacy Zabojszcz", birth: "", death: "", gender: "m", parents: ["tomasz-zabojszcz", "roza-zabojszcz"], spouses: [] },
+  { id: "monika-bacia", name: "Monika Bacia (z d. Zabojszcz)", birth: "", death: "", gender: "f", parents: ["marek-zabojszcz", "maria-pietruszka"], spouses: ["michal-bacia"] },
+  { id: "michal-bacia", name: "Michał Bacia", birth: "", death: "", gender: "m", parents: [], spouses: ["monika-bacia"] },
+  { id: "marta-bacia", name: "Marta Bacia", birth: "", death: "", gender: "f", parents: ["monika-bacia", "michal-bacia"], spouses: [] },
+  { id: "malgorzata-bacia", name: "Małgorzata Bacia", birth: "", death: "", gender: "f", parents: ["monika-bacia", "michal-bacia"], spouses: [] },
+
+  // Jacek & Ewa's children
+  { id: "maciej-zabojszcz", name: "Maciej Zabojszcz", birth: "", death: "", gender: "m", parents: ["jacek-zabojszcz", "ewa-zabojszcz"], spouses: ["pelagia-zabojszcz"] },
+  { id: "pelagia-zabojszcz", name: "Pelagia Zabojszcz (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["maciej-zabojszcz"] },
+  { id: "julia-zabojszcz", name: "Julia Zabojszcz", birth: "", death: "", gender: "f", parents: ["jacek-zabojszcz", "ewa-zabojszcz"], spouses: [] },
+  { id: "matylda-zabojszcz", name: "Matylda Zabojszcz", birth: "", death: "", gender: "f", parents: ["maciej-zabojszcz", "pelagia-zabojszcz"], spouses: [] },
+
+  // Krystyna & Piotr's line
+  { id: "lukasz-mieszkowski", name: "Łukasz Mieszkowski", birth: "", death: "", gender: "m", parents: ["krystyna-mieszkowska", "piotr-mieszkowski"], spouses: [] },
+  { id: "anna-mieszkowska", name: "Anna Mieszkowska", birth: "", death: "", gender: "f", parents: ["lukasz-mieszkowski"], spouses: [] },
+
+  // Edward & Hanna's children
+  { id: "marek-rogowski", name: "Marek Rogowski", birth: "", death: "", gender: "m", parents: ["edward-rogowski", "hanna-rogowska"], spouses: ["izabela-rogowska"] },
+  { id: "izabela-rogowska", name: "Izabela Rogowska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["marek-rogowski"] },
+  { id: "justyna-rogowska", name: "Justyna Rogowska", birth: "", death: "", gender: "f", parents: ["marek-rogowski", "izabela-rogowska"], spouses: [] },
+
+  { id: "katarzyna-tobolska", name: "Katarzyna Tobolska (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["edward-rogowski", "hanna-rogowska"], spouses: ["jaroslaw-tobolski"] },
+  { id: "jaroslaw-tobolski", name: "Jarosław Tobolski", birth: "", death: "", gender: "m", parents: [], spouses: ["katarzyna-tobolska"] },
+
+  // Katarzyna & Jarosław's children
+  { id: "monika-junghe", name: "Monika Junghe (z d. Tobolska)", birth: "", death: "", gender: "f", parents: ["katarzyna-tobolska", "jaroslaw-tobolski"], spouses: ["kamil-junghe"] },
+  { id: "kamil-junghe", name: "Kamil Junghe", birth: "", death: "", gender: "m", parents: [], spouses: ["monika-junghe"] },
+  { id: "jakub-junghe", name: "Jakub Junghe", birth: "", death: "", gender: "m", parents: ["monika-junghe", "kamil-junghe"], spouses: [] },
+  { id: "agata-junghe", name: "Agata Junghe", birth: "", death: "", gender: "f", parents: ["monika-junghe", "kamil-junghe"], spouses: [] },
+
+  { id: "maciek-tobolski", name: "Maciek Tobolski", birth: "", death: "", gender: "m", parents: ["katarzyna-tobolska", "jaroslaw-tobolski"], spouses: ["katarzyna-dabrowska"] },
+  { id: "katarzyna-dabrowska", name: "Katarzyna Tobolska (z d. Dąbrowska)", birth: "", death: "", gender: "f", parents: [], spouses: ["maciek-tobolski"] },
+  { id: "pawel-tobolski", name: "Paweł Tobolski", birth: "", death: "", gender: "m", parents: ["maciek-tobolski", "katarzyna-dabrowska"], spouses: [] },
+  { id: "karol-tobolski", name: "Karol Tobolski", birth: "", death: "", gender: "m", parents: ["maciek-tobolski", "katarzyna-dabrowska"], spouses: [] },
+
+  // Stefania & Franciszek's children
+  { id: "danuta-kosinska", name: "Danuta Śmierzyńska (z d. Kosińska)", birth: "", death: "", gender: "f", parents: ["stefania-rogowska", "franciszek-kosinski"], spouses: ["marian-smierzynski"] },
+  { id: "marian-smierzynski", name: "Marian Śmierzyński", birth: "", death: "", gender: "m", parents: [], spouses: ["danuta-kosinska"] },
+  { id: "kazimierz-kosinski", name: "Kazimierz Kosiński", birth: "", death: "", gender: "m", parents: ["stefania-rogowska", "franciszek-kosinski"], spouses: ["barbara-kosinska"] },
+
+  // Danuta & Marian's children
+  { id: "andrzej-smierzynski", name: "Andrzej Śmierzyński", birth: "", death: "", gender: "m", parents: ["danuta-kosinska", "marian-smierzynski"], spouses: [] },
+  { id: "malgorzata-smierzynska", name: "Małgorzata Piórek (z d. Śmierzyńska)", birth: "", death: "", gender: "f", parents: ["danuta-kosinska", "marian-smierzynski"], spouses: ["piotr-piorek"] },
+  { id: "piotr-piorek", name: "Piotr Piórek", birth: "", death: "", gender: "m", parents: [], spouses: ["malgorzata-smierzynska"] },
+
+  // Małgorzata & Piotr's children
+  { id: "tomasz-piorek", name: "Tomasz Piórek", birth: "", death: "", gender: "m", parents: ["malgorzata-smierzynska", "piotr-piorek"], spouses: [] },
+  { id: "sonia-piorek", name: "Sonia Piórek", birth: "", death: "", gender: "f", parents: ["malgorzata-smierzynska", "piotr-piorek"], spouses: [] },
+
+  // Tomasz's son
+  { id: "ignacy-piorek", name: "Ignacy Piórek", birth: "", death: "", gender: "m", parents: ["tomasz-piorek"], spouses: [] },
+
+  // Kazimierz's line
+  { id: "barbara-kosinska", name: "Barbara Kosińska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["kazimierz-kosinski"] },
+  { id: "robert-kosinski", name: "Robert Kosiński", birth: "", death: "", gender: "m", parents: ["kazimierz-kosinski", "barbara-kosinska"], spouses: ["monika-kosinska"] },
+  { id: "monika-kosinska", name: "Monika Kosińska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["robert-kosinski"] },
+
+  { id: "artur-kosinski", name: "Artur Kosiński", birth: "", death: "", gender: "m", parents: ["robert-kosinski", "monika-kosinska"], spouses: [] },
+  { id: "pawel-kosinski", name: "Paweł Kosiński", birth: "", death: "", gender: "m", parents: ["robert-kosinski", "monika-kosinska"], spouses: [] },
+  { id: "karol-kosinski", name: "Karol Kosiński", birth: "", death: "", gender: "m", parents: ["robert-kosinski", "monika-kosinska"], spouses: [] },
+
+  // Zygmunt & Katarzyna's children
+  { id: "miroslaw-rogowski", name: "Mirosław Rogowski", birth: "", death: "", gender: "m", parents: ["zygmunt-rogowski", "katarzyna-slusarek"], spouses: ["danuta-paintak"] },
+  { id: "danuta-paintak", name: "Danuta Rogowska (z d. Paintak)", birth: "", death: "", gender: "f", parents: [], spouses: ["miroslaw-rogowski"] },
+  { id: "jozef-zygmunt-rogowski", name: "Józef Rogowski", birth: "", death: "", gender: "m", parents: ["zygmunt-rogowski", "katarzyna-slusarek"], spouses: ["hanna-jozef-rogowska"] },
+
+  // Mirosław & Danuta's daughters
+  { id: "anna-rogowska", name: "Anna Urbańska (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["miroslaw-rogowski", "danuta-paintak"], spouses: ["pawel-urbanski"] },
+  { id: "pawel-urbanski", name: "Paweł Urbański", birth: "", death: "", gender: "m", parents: [], spouses: ["anna-rogowska"] },
+  { id: "katarzyna-pilkowska", name: "Katarzyna Piłkowska (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["miroslaw-rogowski", "danuta-paintak"], spouses: ["bartlomiej-pilkowski"] },
+  { id: "bartlomiej-pilkowski", name: "Bartłomiej Piłkowski", birth: "", death: "", gender: "m", parents: [], spouses: ["katarzyna-pilkowska"] },
+
+  // Anna & Paweł's son
+  { id: "maciej-urbanski", name: "Maciej Urbański", birth: "", death: "", gender: "m", parents: ["anna-rogowska", "pawel-urbanski"], spouses: [] },
+
+  // Katarzyna & Bartłomiej's son
+  { id: "michal-pilkowski", name: "Michał Piłkowski", birth: "", death: "", gender: "m", parents: ["katarzyna-pilkowska", "bartlomiej-pilkowski"], spouses: [] },
+
+  // Józef (Zygmunt's son) & Hanna's children
+  { id: "hanna-jozef-rogowska", name: "Hanna Rogowska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["jozef-zygmunt-rogowski"] },
+  { id: "jacek-rogowski", name: "Jacek Rogowski", birth: "", death: "", gender: "m", parents: ["jozef-zygmunt-rogowski", "hanna-jozef-rogowska"], spouses: ["jacek-wife-unknown"] },
+  { id: "jaroslaw-jozef-rogowski", name: "Jarosław Rogowski", birth: "", death: "", gender: "m", parents: ["jozef-zygmunt-rogowski", "hanna-jozef-rogowska"], spouses: ["alicja-rogowska"] },
+
+  // Jacek's family (names not yet known)
+  { id: "jacek-wife-unknown", name: "Żona Jacka (imię nieznane)", birth: "", death: "", gender: "f", parents: [], spouses: ["jacek-rogowski"] },
+  { id: "jacek-child-unknown", name: "Dziecko Jacka (imię nieznane)", birth: "", death: "", gender: "", parents: ["jacek-rogowski", "jacek-wife-unknown"], spouses: [] },
+
+  // Jarosław & Alicja's family
+  { id: "alicja-rogowska", name: "Alicja Rogowska (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["jaroslaw-jozef-rogowski"] },
+  { id: "jaroslaw-son1-unknown", name: "Syn Jarosława i Alicji (imię nieznane)", birth: "", death: "", gender: "m", parents: ["jaroslaw-jozef-rogowski", "alicja-rogowska"], spouses: [] },
+  { id: "jaroslaw-son2-unknown", name: "Syn Jarosława i Alicji (imię nieznane)", birth: "", death: "", gender: "m", parents: ["jaroslaw-jozef-rogowski", "alicja-rogowska"], spouses: [] },
+
+  // Eugeniusz & Janina's children
+  { id: "jan-rogowski-eugeniusz", name: "Jan Rogowski", birth: "", death: "", gender: "m", parents: ["eugeniusz-rogowski", "janina-rogowska"], spouses: [] },
+  { id: "wieslaw-rogowski", name: "Wiesław Rogowski", birth: "", death: "", gender: "m", parents: ["eugeniusz-rogowski", "janina-rogowska"], spouses: [] },
+  { id: "barbara-rogowska-eugeniusz", name: "Barbara Czajor (z d. Rogowska)", birth: "", death: "", gender: "f", parents: ["eugeniusz-rogowski", "janina-rogowska"], spouses: ["bogdan-unknown"] },
+  { id: "bogdan-unknown", name: "Bogdan Czajor", birth: "", death: "", gender: "m", parents: [], spouses: ["barbara-rogowska-eugeniusz"] },
+
+  // Barbara & Bogdan's children
+  { id: "tomasz-bogdan-unknown", name: "Tomasz Czajor", birth: "", death: "", gender: "m", parents: ["barbara-rogowska-eugeniusz", "bogdan-unknown"], spouses: [] },
+  { id: "rafal-bogdan-unknown", name: "Rafał Czajor", birth: "", death: "", gender: "m", parents: ["barbara-rogowska-eugeniusz", "bogdan-unknown"], spouses: [] },
+
+  // ------- the Skrzypiec line (Katarzyna's birth family) -------
+  // placeholder for Katarzyna's and Józef Skrzypiec's parents (more siblings existed, names unknown)
+  { id: "rodzice-skrzypcowie", name: "Rodzice Skrzypcowie (imiona nieznane)", birth: "", death: "", gender: "", parents: [], spouses: [] },
+
+  { id: "jozef-skrzypiec", name: "Józef Skrzypiec", birth: "", death: "", gender: "m", parents: ["rodzice-skrzypcowie"], spouses: ["zona-jozefa-skrzypca"] },
+  { id: "zona-jozefa-skrzypca", name: "Żona Józefa Skrzypca (imię nieznane)", birth: "", death: "", gender: "f", parents: [], spouses: ["jozef-skrzypiec"] },
+
+  // Józef Skrzypiec's six children
+  { id: "hanna-tulecka", name: "Hanna Tulecka (z d. Skrzypiec)", birth: "", death: "", gender: "f", parents: ["jozef-skrzypiec", "zona-jozefa-skrzypca"], spouses: ["boleslaw-tulecki"] },
+  { id: "boleslaw-tulecki", name: "Bolesław Tulecki", birth: "", death: "", gender: "m", parents: [], spouses: ["hanna-tulecka"] },
+  { id: "natalia-kapustianyk", name: "Natalia „Danka” Kapustianyk (z d. Skrzypiec)", birth: "", death: "", gender: "f", parents: ["jozef-skrzypiec", "zona-jozefa-skrzypca"], spouses: ["eugeniusz-kapustianyk"] },
+  { id: "eugeniusz-kapustianyk", name: "Eugeniusz Kapustianyk", birth: "", death: "", gender: "m", parents: [], spouses: ["natalia-kapustianyk"] },
+  { id: "kazimiera-skrzypiec", name: "Kazimiera (z d. Skrzypiec)", birth: "", death: "", gender: "f", parents: ["jozef-skrzypiec", "zona-jozefa-skrzypca"], spouses: [] },
+  { id: "corka-skrzypiec", name: "Córka Skrzypiec (imię nieznane)", birth: "", death: "", gender: "f", parents: ["jozef-skrzypiec", "zona-jozefa-skrzypca"], spouses: [] },
+  { id: "syn1-skrzypiec", name: "Syn Skrzypiec (imię nieznane)", birth: "", death: "", gender: "m", parents: ["jozef-skrzypiec", "zona-jozefa-skrzypca"], spouses: [] },
+  { id: "syn2-skrzypiec", name: "Syn Skrzypiec (imię nieznane)", birth: "", death: "", gender: "m", parents: ["jozef-skrzypiec", "zona-jozefa-skrzypca"], spouses: [] },
+
+  // grandchildren known only by count, kept as single summary cards for now
+  { id: "dzieci-kazimiery", name: "Sześcioro dzieci (imiona nieznane)", birth: "", death: "", gender: "", parents: ["kazimiera-skrzypiec"], spouses: [] },
+  { id: "dzieci-corki-skrzypiec", name: "Sześcioro dzieci (imiona nieznane)", birth: "", death: "", gender: "", parents: ["corka-skrzypiec"], spouses: [] },
+  { id: "dzieci-syna1-skrzypiec", name: "Dwoje dzieci (imiona nieznane)", birth: "", death: "", gender: "", parents: ["syn1-skrzypiec"], spouses: [] },
+  { id: "dzieci-syna2-skrzypiec", name: "Dwoje dzieci (imiona nieznane)", birth: "", death: "", gender: "", parents: ["syn2-skrzypiec"], spouses: [] },
+
+  // Hanna & Bolesław Tulecki's children
+  { id: "joanna-bartoszek", name: "Joanna Bartoszek (z d. Tulecka)", birth: "", death: "", gender: "f", parents: ["hanna-tulecka", "boleslaw-tulecki"], spouses: ["wieslaw-bartoszek"] },
+  { id: "wieslaw-bartoszek", name: "Wiesław Bartoszek", birth: "", death: "", gender: "m", parents: [], spouses: ["joanna-bartoszek"] },
+  { id: "syn-tulecki", name: "Syn Tuleckich (imię nieznane)", birth: "", death: "", gender: "m", parents: ["hanna-tulecka", "boleslaw-tulecki"], spouses: [] },
+
+  // Joanna & Wiesław Bartoszek's children
+  { id: "anna-bartoszek", name: "Anna Bartoszek", birth: "", death: "", gender: "f", parents: ["joanna-bartoszek", "wieslaw-bartoszek"], spouses: ["kowalski-partner"] },
+  { id: "sebastian-bartoszek", name: "Sebastian Bartoszek", birth: "", death: "", gender: "m", parents: ["joanna-bartoszek", "wieslaw-bartoszek"], spouses: [] },
+  { id: "tymoteusz-bartoszek", name: "Tymoteusz Bartoszek", birth: "", death: "", gender: "m", parents: ["sebastian-bartoszek"], spouses: [] },
+  { id: "lara-bartoszek", name: "Lara Bartoszek", birth: "", death: "", gender: "f", parents: ["sebastian-bartoszek"], spouses: [] },
+  { id: "kowalski-partner", name: "Kowalski (imię nieznane, były partner)", birth: "", death: "", gender: "m", parents: [], spouses: ["anna-bartoszek"] },
+  { id: "ryszard-kowalski", name: "Ryszard Kowalski", birth: "", death: "", gender: "m", parents: ["anna-bartoszek", "kowalski-partner"], spouses: [] },
+
+  // Natalia & Eugeniusz Kapustianyk's children
+  { id: "piotr-kapustianyk", name: "Piotr Kapustianyk", birth: "", death: "", gender: "m", parents: ["natalia-kapustianyk", "eugeniusz-kapustianyk"], spouses: ["izabela-kapustianyk"] },
+  { id: "izabela-kapustianyk", name: "Izabela Kapustianyk (z d. Grzęda)", birth: "", death: "", gender: "f", parents: [], spouses: ["piotr-kapustianyk"] },
+  { id: "bartosz-kapustianyk", name: "Bartosz Kapustianyk", birth: "", death: "", gender: "m", parents: ["piotr-kapustianyk", "izabela-kapustianyk"], spouses: ["beata-kapustianyk"] },
+  { id: "beata-kapustianyk", name: "Beata Kapustianyk (z d. Czerniga)", birth: "", death: "", gender: "f", parents: [], spouses: ["bartosz-kapustianyk"] },
+
+  { id: "renata-pietruszka", name: "Renata Pietruszka (z d. Kapustianyk)", birth: "", death: "", gender: "f", parents: ["natalia-kapustianyk", "eugeniusz-kapustianyk"], spouses: ["jan-pietruszka"] },
+  { id: "jan-pietruszka", name: "Jan Pietruszka", birth: "", death: "", gender: "m", parents: [], spouses: ["renata-pietruszka"] },
+  { id: "agnieszka-kepa", name: "Agnieszka Kępa (z d. Pietruszka)", birth: "", death: "", gender: "f", parents: ["renata-pietruszka", "jan-pietruszka"], spouses: ["piotr-kepa"] },
+  { id: "piotr-kepa", name: "Piotr Kępa", birth: "", death: "", gender: "m", parents: [], spouses: ["agnieszka-kepa"] },
+  { id: "maciej-pietruszka", name: "Maciej Pietruszka", birth: "", death: "", gender: "m", parents: ["renata-pietruszka", "jan-pietruszka"], spouses: [] },
+  { id: "fryderyk-kepa", name: "Fryderyk Kępa", birth: "", death: "", gender: "m", parents: ["agnieszka-kepa", "piotr-kepa"], spouses: [] },
+  { id: "antonina-kepa", name: "Antonina Kępa", birth: "", death: "", gender: "f", parents: ["agnieszka-kepa", "piotr-kepa"], spouses: [] },
+];
+
+// ---------------------------------------------------------
+// Layout engine — assigns each person a generation (row) based on
+// parent/child depth, then positions people left-to-right within
+// each row, keeping spouses adjacent and children under parents.
+// ---------------------------------------------------------
+const measureCanvas = document.createElement('canvas');
+const measureCtx = measureCanvas.getContext('2d');
+function textWidth(text, font){
+  measureCtx.font = font;
+  return measureCtx.measureText(text || '').width;
+}
+
+const CARD_H = 54, SPOUSE_GAP = 14, CARD_PAD_X = 14, CARD_MIN_W = 130, CARD_MAX_W = 280;
+const COL_GUT = 44, TOP_GAP = 56, ROOT_GAP_X = 160;
+
+const BRANCH_PALETTE = ['#2F8C71','#D0684B','#C79436','#5C8CD5','#A16BC4','#3FA4C9','#7DA653','#C4638F'];
+
+function yearsText(p){
+  if(p.birth && p.death) return `${p.birth}–${p.death}`;
+  if(p.birth) return `ur. ${p.birth}`;
+  if(p.death) return `zm. ${p.death}`;
+  return '';
+}
+
+function cardWidth(p){
+  const nameFont = '600 13px "Instrument Sans", system-ui, sans-serif';
+  const yearsFont = '11.5px "Instrument Sans", system-ui, sans-serif';
+  const w = Math.max(textWidth(p.name, nameFont), textWidth(yearsText(p), yearsFont)) + CARD_PAD_X * 2 + 24;
+  return Math.min(CARD_MAX_W, Math.max(CARD_MIN_W, Math.ceil(w)));
+}
+
+function computeLayout(people){
+  const byId = Object.fromEntries(people.map(p => [p.id, p]));
+
+  // generation = 0 for people with no parents in the dataset,
+  // else 1 + max(parent generations)
+  const genCache = {};
+  function getGen(id, seen = new Set()){
+    if(genCache[id] !== undefined) return genCache[id];
+    if(seen.has(id)) return 0; // cycle guard
+    seen.add(id);
+    const p = byId[id];
+    if(!p || !p.parents || p.parents.length === 0){
+      genCache[id] = 0;
+      return 0;
+    }
+    const gens = p.parents.filter(pid => byId[pid]).map(pid => getGen(pid, seen));
+    const g = gens.length ? Math.max(...gens) + 1 : 0;
+    genCache[id] = g;
+    return g;
+  }
+  people.forEach(p => getGen(p.id));
+
+  // married-in spouses have no parents in the dataset, so they'd default
+  // to generation 0 — pull them onto their partner's row instead
+  for(let pass = 0; pass < 4; pass++){
+    people.forEach(p => {
+      (p.spouses||[]).forEach(sid => {
+        if(!byId[sid]) return;
+        const g = Math.max(genCache[p.id], genCache[sid]);
+        genCache[p.id] = g;
+        genCache[sid] = g;
+      });
+    });
+  }
+
+  // group by generation
+  const rows = {};
+  people.forEach(p => {
+    const g = genCache[p.id];
+    rows[g] = rows[g] || [];
+    rows[g].push(p.id);
+  });
+  const maxGen = Math.max(0, ...Object.keys(rows).map(Number));
+
+  // Color-code lineages: children of these parent nodes (in priority order)
+  // each found a colored branch; the color then flows down through every
+  // descendant and sideways to married-in spouses, so a lineage reads as one.
+  const BRANCH_PARENT_SETS = [
+    ['jozef-rogowski', 'katarzyna-rogowska'],
+    ['rodzice-rogowscy'],
+    ['jozef-skrzypiec', 'zona-jozefa-skrzypca'],
+    ['rodzice-skrzypcowie'],
+  ];
+  const branchColor = {};
+  let colorIdx = 0;
+  BRANCH_PARENT_SETS.forEach(set => {
+    people.forEach(p => {
+      if(branchColor[p.id]) return;
+      if((p.parents || []).some(pid => set.includes(pid))){
+        branchColor[p.id] = BRANCH_PALETTE[colorIdx++ % BRANCH_PALETTE.length];
+      }
+    });
+  });
+  for(let gnum = 0; gnum <= maxGen; gnum++){
+    (rows[gnum] || []).forEach(id => {
+      if(!branchColor[id]){
+        const parentWithColor = (byId[id].parents || []).find(pid => branchColor[pid]);
+        if(parentWithColor) branchColor[id] = branchColor[parentWithColor];
+      }
+    });
+    (rows[gnum] || []).forEach(id => {
+      (byId[id].spouses || []).forEach(sid => {
+        if(branchColor[id] && byId[sid] && !branchColor[sid]) branchColor[sid] = branchColor[id];
+      });
+    });
+  }
+
+  // ---- family-cluster layout ----
+  // A "unit" is one person plus their married-in spouses; their children's
+  // units nest below as a cluster. When a family's children get too wide,
+  // they wrap onto additional rows (shelves), so the tree grows vertically
+  // instead of stretching into one enormous generation-wide row.
+  const attachedTo = {};
+  people.forEach(p => {
+    if(attachedTo[p.id]) return;
+    (p.spouses || []).forEach(sid => {
+      const s = byId[sid];
+      if(!s || attachedTo[sid] || sid === p.id) return;
+      const marriedIn = !(s.parents || []).some(pid => byId[pid]);
+      // a spouse with known parents can still sit beside their partner as
+      // long as all their children are shared with this partner — their own
+      // parents then reach them with a long-range link across clusters
+      const childrenShared = people.every(ch => {
+        const par = ch.parents || [];
+        return !par.includes(sid) || par.includes(p.id);
+      });
+      if(marriedIn || childrenShared) attachedTo[sid] = p.id;
+    });
+  });
+
+  const unitByHead = {};
+  const unitList = [];
+  people.forEach(p => {
+    if(attachedTo[p.id]) return;
+    const u = { head: p, members: [p], children: [], childGroups: [], columns: [] };
+    unitByHead[p.id] = u;
+    unitList.push(u);
+  });
+  people.forEach(p => {
+    if(attachedTo[p.id]) unitByHead[attachedTo[p.id]].members.push(p);
+  });
+
+  // hand each full-sibling group to the unit of the parent it hangs under
+  const groupsByKey = {};
+  people.forEach(p => {
+    const par = (p.parents || []).filter(pid => byId[pid]);
+    if(!par.length) return;
+    const key = par.slice().sort().join(',');
+    (groupsByKey[key] = groupsByKey[key] || { parents: par, kids: [] }).kids.push(p);
+  });
+  Object.values(groupsByKey).forEach(gr => {
+    const ownerId = gr.parents.find(pid => unitByHead[pid]) || attachedTo[gr.parents[0]];
+    const owner = unitByHead[ownerId];
+    gr.kids.forEach(k => { const cu = unitByHead[k.id]; if(cu) owner.children.push(cu); });
+    owner.childGroups.push(gr);
+  });
+
+  function layoutUnit(u){
+    const mw = u.members.map(cardWidth);
+    u.coupleW = mw.reduce((a,b) => a+b, 0) + SPOUSE_GAP * (u.members.length - 1);
+    u.memberPos = [];
+    let cx = 0;
+    u.members.forEach((m,i) => { u.memberPos.push({ id: m.id, x: cx, w: mw[i] }); cx += mw[i] + SPOUSE_GAP; });
+
+    if(!u.children.length){
+      u.coupleX = 0; u.w = u.coupleW; u.h = CARD_H;
+      return;
+    }
+    u.children.forEach(layoutUnit);
+    // All sibling clusters sit side by side, top-aligned — no family is
+    // ever pushed below another family's branch. Shallow clusters lean
+    // left, the deepest to the right; the tree grows as wide as it needs.
+    const orderIdx = new Map(u.children.map((c, i) => [c, i]));
+    const sorted = u.children.slice().sort((a, b) => (a.h - b.h) || (orderIdx.get(a) - orderIdx.get(b)));
+    let bx = 0;
+    u.columns = sorted.map(c => {
+      const cl = { items: [c], w: c.w, h: c.h, x: bx + COL_GUT };
+      bx = cl.x + c.w;
+      c.relY = 0;
+      c.col = cl;
+      return cl;
+    });
+    u.coupleX = Math.max(0, (bx - u.coupleW) / 2);
+    u.w = Math.max(bx, u.coupleX + u.coupleW);
+    u.h = CARD_H + TOP_GAP + Math.max(...u.columns.map(cl => cl.h));
+  }
+
+  const pos = {};
+  function placeUnit(u, ox, oy){
+    u.absX = ox; u.absY = oy;
+    u.memberPos.forEach(mp => { pos[mp.id] = { x: ox + u.coupleX + mp.x, y: oy, w: mp.w }; });
+    u.columns.forEach(cl => cl.items.forEach(c => placeUnit(c, ox + cl.x, oy + CARD_H + TOP_GAP + c.relY)));
+  }
+
+  // root families sit side by side, left to right
+  const roots = unitList.filter(u => !(u.head.parents || []).some(pid => byId[pid]));
+  let rx = 0, height = 1;
+  roots.forEach(r => {
+    layoutUnit(r);
+    placeUnit(r, rx, 0);
+    rx += r.w + ROOT_GAP_X;
+    height = Math.max(height, r.h);
+  });
+  const width = Math.max(1, rx - ROOT_GAP_X);
+
+  // ---- connector paths ----
+  const links = [];
+  let outerRails = 0;
+  unitList.forEach(u => {
+    u.childGroups.forEach((gr, gi) => {
+      const anchorIds = gr.parents.filter(pid => (unitByHead[pid] || unitByHead[attachedTo[pid]]) === u);
+      const aps = (anchorIds.length ? anchorIds : gr.parents).map(pid => pos[pid]);
+      const anchorX = aps.reduce((s,p) => s + p.x + p.w/2, 0) / aps.length;
+      const anchorY = Math.max(...aps.map(p => p.y)) + CARD_H;
+      const color = branchColor[gr.kids[0].id] || null;
+      const off = TOP_GAP * (gi + 1) / (u.childGroups.length + 1);
+
+      const localKids = [];
+      const remote = [];
+      gr.kids.forEach(k => {
+        const cu = unitByHead[k.id];
+        if(cu && cu.col && u.children.includes(cu)) localKids.push(cu);
+        else remote.push(k);
+      });
+
+      // long-range links to children displayed beside a spouse in another
+      // cluster: routed over the top of the tree, then straight down into
+      // the child's card
+      remote.forEach(k => {
+        const kp = pos[k.id];
+        if(!kp) return;
+        const kcx = kp.x + kp.w/2;
+        const upY = -28 - (outerRails++) * 12;
+        const parTop = Math.min(...aps.map(p => p.y));
+        links.push({ d: `M ${anchorX} ${parTop} L ${anchorX} ${upY} L ${kcx} ${upY} L ${kcx} ${kp.y}`, color: branchColor[k.id] || color });
+      });
+      if(!localKids.length) return;
+
+      const kidPt = cu => { const hp = pos[cu.head.id]; return { x: hp.x + hp.w/2, y: hp.y }; };
+
+      if(localKids.length === 1){
+        const p1 = kidPt(localKids[0]);
+        const midY = p1.y - 12 - gi * 7;
+        if(Math.abs(p1.x - anchorX) < 1){
+          links.push({ d: `M ${anchorX} ${anchorY} L ${anchorX} ${p1.y}`, color });
+        } else {
+          links.push({ d: `M ${anchorX} ${anchorY} L ${anchorX} ${midY} L ${p1.x} ${midY} L ${p1.x} ${p1.y}`, color });
+        }
+      } else {
+        // children are top-aligned side by side: trunk down to a bus, then
+        // a vertical drop into each child's card top
+        const bandY = u.absY + CARD_H + off;
+        const pts = localKids.map(kidPt);
+        const minX = Math.min(anchorX, ...pts.map(p => p.x));
+        const maxX = Math.max(anchorX, ...pts.map(p => p.x));
+        links.push({ d: `M ${anchorX} ${anchorY} L ${anchorX} ${bandY}`, color });
+        if(maxX > minX) links.push({ d: `M ${minX} ${bandY} L ${maxX} ${bandY}`, color });
+        pts.forEach(p => links.push({ d: `M ${p.x} ${bandY} L ${p.x} ${p.y}`, color }));
+      }
+    });
+  });
+
+  return { pos, CARD_H, maxGen, width, height, branchColor, links, gen: genCache };
+}
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+
+function render(){
+  const viewport = document.getElementById('viewport');
+  const emptyState = document.getElementById('empty');
+  viewport.innerHTML = '';
+
+  if(!people.length){
+    emptyState.style.display = 'block';
+    viewport.style.display = 'none';
+    return;
+  }
+  emptyState.style.display = 'none';
+  viewport.style.display = '';
+
+  const { pos, CARD_H, maxGen, width, height, branchColor, links, gen } = computeLayout(people);
+
+  const plOsoby = n => { const u = n%10, t = n%100; if(n===1) return 'osoba'; if(u>=2 && u<=4 && (t<12 || t>14)) return 'osoby'; return 'osób'; };
+  const plPokolen = n => { const u = n%10, t = n%100; if(n===1) return 'pokolenie'; if(u>=2 && u<=4 && (t<12 || t>14)) return 'pokolenia'; return 'pokoleń'; };
+  document.getElementById('stats').textContent =
+    `${people.length} ${plOsoby(people.length)} · ${maxGen+1} ${plPokolen(maxGen+1)} · rodzina Rogowskich i linie potomne`;
+
+  const PAD = 60;
+  const worldW = width + PAD * 2;
+  const worldH = height + PAD * 2;
+
+  const svg = document.createElementNS(SVGNS,'svg');
+  const camera = document.createElementNS(SVGNS,'g');
+  svg.appendChild(camera);
+  const g = document.createElementNS(SVGNS,'g');
+  g.setAttribute('transform', `translate(${PAD},${PAD})`);
+  camera.appendChild(g);
+
+  function center(id){
+    const p = pos[id];
+    return { x: p.x + p.w/2, y: p.y + CARD_H/2 };
+  }
+  function topCenter(id){
+    const p = pos[id];
+    return { x: p.x + p.w/2, y: p.y };
+  }
+  function bottomCenter(id){
+    const p = pos[id];
+    return { x: p.x + p.w/2, y: p.y + CARD_H };
+  }
+
+  function path(d, cls, color){
+    const el = document.createElementNS('http://www.w3.org/2000/svg','path');
+    el.setAttribute('class', cls);
+    el.setAttribute('d', d);
+    if(color) el.style.stroke = color;
+    g.appendChild(el);
+  }
+
+  // parent -> children connectors (already computed by the cluster layout)
+  links.forEach(l => path(l.d, 'link-parent', l.color));
+
+  // spouse links
+  const drawnSpousePairs = new Set();
+  people.forEach(p => {
+    (p.spouses||[]).forEach(sid => {
+      if(!pos[sid]) return;
+      const key = [p.id, sid].sort().join('|');
+      if(drawnSpousePairs.has(key)) return;
+      drawnSpousePairs.add(key);
+      const c1 = center(p.id), c2 = center(sid);
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('class','link-spouse');
+      line.setAttribute('x1', c1.x); line.setAttribute('y1', c1.y);
+      line.setAttribute('x2', c2.x); line.setAttribute('y2', c2.y);
+      g.appendChild(line);
+    });
+  });
+
+  // hover tooltip: shows which generation a person belongs to
+  const tip = document.createElement('div');
+  tip.id = 'tooltip';
+
+  // person cards
+  people.forEach(p => {
+    const { x, y, w } = pos[p.id];
+    const card = document.createElementNS(SVGNS,'g');
+    card.setAttribute('transform', `translate(${x},${y})`);
+
+    const rect = document.createElementNS(SVGNS,'rect');
+    rect.setAttribute('class','person-card');
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', CARD_H);
+    rect.setAttribute('rx', 8);
+    card.appendChild(rect);
+
+    const yt = yearsText(p);
+    const nameY = yt ? 22 : CARD_H/2 + 4.5;
+
+    const dot = document.createElementNS(SVGNS,'circle');
+    dot.setAttribute('cx', CARD_PAD_X + 4);
+    dot.setAttribute('cy', nameY - 4.5);
+    dot.setAttribute('r', 3.5);
+    dot.setAttribute('fill', branchColor[p.id] || 'var(--accent)');
+    card.appendChild(dot);
+
+    const name = document.createElementNS(SVGNS,'text');
+    name.setAttribute('class','person-name');
+    name.setAttribute('x', CARD_PAD_X + 16);
+    name.setAttribute('y', nameY);
+    name.textContent = p.name;
+    card.appendChild(name);
+
+    if(yt){
+      const years = document.createElementNS(SVGNS,'text');
+      years.setAttribute('class','person-years');
+      years.setAttribute('x', CARD_PAD_X + 16);
+      years.setAttribute('y', 39);
+      years.textContent = yt;
+      card.appendChild(years);
+    }
+
+    card.onpointerenter = () => {
+      tip.textContent = `Pokolenie ${ROMAN[gen[p.id]] || gen[p.id] + 1}`;
+      tip.style.display = 'block';
+    };
+    card.onpointermove = e => {
+      const r = viewport.getBoundingClientRect();
+      tip.style.left = (e.clientX - r.left + 14) + 'px';
+      tip.style.top = (e.clientY - r.top + 16) + 'px';
+    };
+    card.onpointerleave = () => { tip.style.display = 'none'; };
+
+    g.appendChild(card);
+  });
+
+  // --- pan & zoom ---
+  const view = { x: 0, y: 0, k: 1 };
+  function applyView(){
+    camera.setAttribute('transform', `translate(${view.x} ${view.y}) scale(${view.k})`);
+  }
+  function fit(){
+    const vw = viewport.clientWidth || 800, vh = viewport.clientHeight || 500;
+    const k = Math.min(vw / worldW, vh / worldH, 1.15);
+    view.k = k;
+    view.x = (vw - worldW * k) / 2;
+    view.y = Math.max((vh - worldH * k) / 2, 8);
+    applyView();
+  }
+  function zoomAt(px, py, factor){
+    const k2 = Math.min(3, Math.max(0.06, view.k * factor));
+    const f = k2 / view.k;
+    view.x = px - (px - view.x) * f;
+    view.y = py - (py - view.y) * f;
+    view.k = k2;
+    applyView();
+  }
+
+  viewport.onwheel = e => {
+    e.preventDefault();
+    const r = viewport.getBoundingClientRect();
+    zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0018));
+  };
+
+  const pointers = new Map();
+  let lastMid = null, lastDist = null;
+  viewport.onpointerdown = e => {
+    tip.style.display = 'none';
+    viewport.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(pointers.size === 1) viewport.classList.add('dragging');
+    lastMid = null; lastDist = null;
+  };
+  viewport.onpointermove = e => {
+    if(!pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(pointers.size === 1){
+      view.x += e.clientX - prev.x;
+      view.y += e.clientY - prev.y;
+      applyView();
+    } else if(pointers.size === 2){
+      const pts = [...pointers.values()];
+      const mid = { x: (pts[0].x + pts[1].x)/2, y: (pts[0].y + pts[1].y)/2 };
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if(lastMid){
+        view.x += mid.x - lastMid.x;
+        view.y += mid.y - lastMid.y;
+        applyView();
+        const r = viewport.getBoundingClientRect();
+        if(lastDist) zoomAt(mid.x - r.left, mid.y - r.top, dist / lastDist);
+      }
+      lastMid = mid; lastDist = dist;
+    }
+  };
+  const endPointer = e => {
+    pointers.delete(e.pointerId);
+    if(pointers.size === 0) viewport.classList.remove('dragging');
+    lastMid = null; lastDist = null;
+  };
+  viewport.onpointerup = endPointer;
+  viewport.onpointercancel = endPointer;
+
+  document.getElementById('zoom-in').onclick = () => zoomAt(viewport.clientWidth/2, viewport.clientHeight/2, 1.3);
+  document.getElementById('zoom-out').onclick = () => zoomAt(viewport.clientWidth/2, viewport.clientHeight/2, 1/1.3);
+  document.getElementById('zoom-fit').onclick = fit;
+
+  viewport.appendChild(svg);
+  viewport.appendChild(tip);
+
+  // initial view: top of the tree, centered on the root card, readable zoom
+  (function home(){
+    const vw = viewport.clientWidth || 800, vh = viewport.clientHeight || 500;
+    view.k = Math.min(1, vw / 1250);
+    if(worldW * view.k <= vw){
+      view.x = (vw - worldW * view.k) / 2;
+    } else {
+      const rootP = pos[people[0].id];
+      const rootCx = (rootP.x + rootP.w/2 + PAD) * view.k;
+      view.x = Math.max(vw - worldW * view.k - 8, Math.min(8, vw/2 - rootCx));
+    }
+    view.y = Math.max((vh - worldH * view.k) / 2, 12);
+    applyView();
+  })();
+}
+
+render();
+// re-render once the web fonts arrive so card widths are measured with the real face
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => render());
+</script>
+
+</body>
+</html>
