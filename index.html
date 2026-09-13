@@ -578,17 +578,41 @@ const people = [
   { id: "ignacy-piorek", name: "Ignacy Piórek", birth: "", death: "", gender: "m", parents: ["tomasz-piorek"], spouses: [] },
 
   // ------- the Keller line (Piotr Piórek's birth family) -------
-  { id: "stanislaw-piorek", name: "Stanisław Piórek", birth: "", death: "", gender: "m", parents: [], spouses: ["elzbieta-piorek"] },
+  { id: "stanislaw-piorek", name: "Stanisław Piórek", birth: "", death: "", gender: "m", parents: ["jan-piorek", "stanislawa-kowalska"], spouses: ["elzbieta-piorek"] },
   { id: "elzbieta-piorek", name: "Elżbieta Piórek (z d. Keller)", birth: "", death: "", gender: "f", parents: ["bronislaw-keller", "stanislawa-keller"], spouses: ["stanislaw-piorek"] },
 
   { id: "bronislaw-keller", name: "Bronisław Keller", birth: "", death: "", gender: "m", parents: [], spouses: ["stanislawa-keller"] },
-  { id: "stanislawa-keller", name: "Stanisława Keller (z d. Kaczmarek)", birth: "", death: "", gender: "f", parents: [], spouses: ["bronislaw-keller"] },
+  { id: "stanislawa-keller", name: "Stanisława Keller (z d. Kaczmarek)", birth: "", death: "", gender: "f", parents: ["rodzice-kaczmarkowie"], spouses: ["bronislaw-keller"] },
+
+  // Stanisława's birth family — her brother Lech and his line
+  { id: "rodzice-kaczmarkowie", name: "Rodzice Kaczmarkowie (imiona nieznane)", birth: "", death: "", gender: "", parents: [], spouses: [] },
+  { id: "lech-kaczmarek", name: "Lech Kaczmarek", birth: "", death: "", gender: "m", parents: ["rodzice-kaczmarkowie"], spouses: ["zona-lecha"] },
+  { id: "zona-lecha", name: "Żona Lecha (imię nieznane)", birth: "", death: "", gender: "f", parents: [], spouses: ["lech-kaczmarek"] },
+  { id: "bogdan-kaczmarek", name: "Bogdan Kaczmarek", birth: "", death: "", gender: "m", parents: ["lech-kaczmarek", "zona-lecha"], spouses: ["wanda-kaczmarek"] },
+  { id: "wanda-kaczmarek", name: "Wanda Kaczmarek (z d. niewiadomego)", birth: "", death: "", gender: "f", parents: [], spouses: ["bogdan-kaczmarek"] },
+  { id: "waldemar-kaczmarek", name: "Waldemar Kaczmarek", birth: "", death: "", gender: "m", parents: ["lech-kaczmarek", "zona-lecha"], spouses: [] },
+  { id: "adam-kaczmarek", name: "Adam Kaczmarek", birth: "", death: "", gender: "m", parents: ["bogdan-kaczmarek", "wanda-kaczmarek"], spouses: [] },
 
   // Elżbieta's sisters
   { id: "barbara-gumowska", name: "Barbara Gumowska (z d. Keller)", birth: "", death: "", gender: "f", parents: ["bronislaw-keller", "stanislawa-keller"], spouses: ["andrzej-gumowski"] },
   { id: "andrzej-gumowski", name: "Andrzej Gumowski", birth: "", death: "", gender: "m", parents: [], spouses: ["barbara-gumowska"] },
   { id: "bogumila-jarosinska", name: "Bogumiła Jarosińska (z d. Keller)", birth: "", death: "", gender: "f", parents: ["bronislaw-keller", "stanislawa-keller"], spouses: ["wladyslaw-jarosinski"] },
-  { id: "wladyslaw-jarosinski", name: "Władysław „Włodek” Jarosiński", birth: "", death: "", gender: "m", parents: [], spouses: ["bogumila-jarosinska"] },
+
+  // Stanisław Piórek's parents, and his uncle Józef's family
+  { id: "rodzice-piorkowie", name: "Rodzice Piórkowie (imiona nieznane)", birth: "", death: "", gender: "", parents: [], spouses: [] },
+  { id: "jan-piorek", name: "Jan Piórek", birth: "", death: "", gender: "m", parents: ["rodzice-piorkowie"], spouses: ["stanislawa-kowalska"] },
+  { id: "stanislawa-kowalska", name: "Stanisława Piórek (z d. Kowalska)", birth: "", death: "", gender: "f", parents: [], spouses: ["jan-piorek"] },
+  { id: "jozef-piorek", name: "Józef Piórek", birth: "", death: "", gender: "m", parents: ["rodzice-piorkowie"], spouses: ["zona-jozefa-piorka"] },
+  { id: "zona-jozefa-piorka", name: "Żona Józefa Piórka (imię nieznane)", birth: "", death: "", gender: "f", parents: [], spouses: ["jozef-piorek"] },
+  { id: "jadwiga-piorek", name: "Jadwiga Piórek", birth: "", death: "", gender: "f", parents: ["jozef-piorek", "zona-jozefa-piorka"], spouses: [] },
+  { id: "jozefa-piorek", name: "Józefa Piórek", birth: "", death: "", gender: "f", parents: ["jozef-piorek", "zona-jozefa-piorka"], spouses: [] },
+
+  // Włodek Jarosiński's parents and his sister Elżbieta
+  { id: "rodzice-jarosinscy", name: "Rodzice Jarosińscy (imiona nieznane)", birth: "", death: "", gender: "", parents: [], spouses: [] },
+  { id: "elzbieta-jarosinska", name: "Elżbieta Jarosińska", birth: "", death: "", gender: "f", parents: ["rodzice-jarosinscy"], spouses: ["maz-elzbiety-jarosinskiej"] },
+  { id: "maz-elzbiety-jarosinskiej", name: "Mąż Elżbiety (imię i nazwisko nieznane)", birth: "", death: "", gender: "m", parents: [], spouses: ["elzbieta-jarosinska"] },
+  { id: "dzieci-elzbiety-jarosinskiej", name: "Troje dzieci (imiona nieznane)", birth: "", death: "", gender: "", parents: ["elzbieta-jarosinska", "maz-elzbiety-jarosinskiej"], spouses: [] },
+  { id: "wladyslaw-jarosinski", name: "Władysław „Włodek” Jarosiński", birth: "", death: "", gender: "m", parents: ["rodzice-jarosinscy"], spouses: ["bogumila-jarosinska"] },
 
   // Barbara & Andrzej's daughters
   { id: "magdalena-piotrowska", name: "Magdalena Piotrowska (z d. Gumowska)", birth: "", death: "", gender: "f", parents: ["barbara-gumowska", "andrzej-gumowski"], spouses: ["edward-piotrowski"] },
@@ -1045,6 +1069,11 @@ const FAMILY_OVERRIDES = {
   'maz-agaty':              [],
   'dziecko-agaty':          [],
   'agata-dziuba':           ['Dziuba'],
+  'rodzice-piorkowie':      ['Piórek'],
+  'zona-jozefa-piorka':     ['Piórek'],
+  'maz-elzbiety-jarosinskiej': [],
+  'rodzice-kaczmarkowie':   ['Kaczmarek'],
+  'zona-lecha':             [],
 };
 
 const NOT_A_SURNAME = /^(niewiadomego|nieznane|nieznana|nieznany|imię|imiona|dzieci|dziecko|partner|była?|były)$/i;
