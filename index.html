@@ -801,6 +801,39 @@ function computeLayout(people){
     });
   }
 
+  // Pull shallow lines down so a parent always sits exactly one row above
+  // their children. Depth-from-the-top alone puts a branch that reaches
+  // only two generations back on the same row as founders five generations
+  // up, which reads as a mistake: someone's parents end up level with their
+  // great-great-grandparents.
+  const kidsOf = {};
+  people.forEach(p => (p.parents || []).forEach(par => {
+    if(byId[par]) (kidsOf[par] = kidsOf[par] || []).push(p.id);
+  }));
+  for(let pass = 0; pass < 8; pass++){
+    let changed = false;
+    const raise = (id, g) => {
+      if(g > genCache[id]){ genCache[id] = g; changed = true; }
+    };
+    // a parent sits one row above their deepest child
+    people.forEach(p => {
+      const kids = kidsOf[p.id];
+      if(kids && kids.length) raise(p.id, Math.max(...kids.map(k => genCache[k])) - 1);
+    });
+    // children follow their parents, which keeps siblings on one row
+    people.forEach(p => {
+      const par = (p.parents || []).filter(pid => byId[pid]);
+      if(par.length) raise(p.id, Math.max(...par.map(pid => genCache[pid])) + 1);
+    });
+    // and couples share a row
+    people.forEach(p => (p.spouses || []).forEach(sid => {
+      if(!byId[sid]) return;
+      const g = Math.max(genCache[p.id], genCache[sid]);
+      raise(p.id, g); raise(sid, g);
+    }));
+    if(!changed) break;
+  }
+
   // group by generation
   const rows = {};
   people.forEach(p => {
@@ -945,12 +978,16 @@ function computeLayout(people){
 
   // root families sit side by side, left to right
   const roots = unitList.filter(u => !(u.head.parents || []).some(pid => byId[pid]));
+  // a root starts on its own generation's row, not at the top of the canvas,
+  // so every generation reads as one horizontal band across the whole tree
+  const ROW_H = CARD_H + TOP_GAP;
   let rx = 0, height = 1;
   roots.forEach(r => {
     layoutUnit(r);
-    placeUnit(r, rx, 0);
+    const ry = (genCache[r.head.id] || 0) * ROW_H;
+    placeUnit(r, rx, ry);
     rx += r.w + ROOT_GAP_X;
-    height = Math.max(height, r.h);
+    height = Math.max(height, ry + r.h);
   });
   const width = Math.max(1, rx - ROOT_GAP_X);
 
